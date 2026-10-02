@@ -84,6 +84,10 @@ app.use(cors({
     if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
       return callback(null, true);
     }
+    // Allow Vercel preview & production deployments
+    if (/\.vercel\.app$/.test(origin)) {
+      return callback(null, true);
+    }
     return callback(new Error(`CORS blocked origin: ${origin}`));
   },
   credentials: true
