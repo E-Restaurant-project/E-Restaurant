@@ -1,0 +1,6 @@
+/* Master CSS for Phum Yeung Restaurant */
+@import './styles/variables.css';
+@import './styles/base.css';
+@import './styles/components.css';
+@import './styles/pages.css';
+

@@ -1,0 +1,1025 @@
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Truck,
+  ShoppingBag,
+  CreditCard,
+  Banknote,
+  CheckCircle,
+  Printer,
+  ArrowLeft,
+  QrCode,
+  MapPin,
+  AlertCircle,
+  RefreshCw
+} from 'lucide-react';
+import { useLanguage } from '../hooks/useLanguage';
+import { useCart } from '../hooks/useCart';
+import { useRestaurant } from '../hooks/useRestaurant';
+import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/useToast';
+import { apiService } from '../services/api';
+import { Button } from '../components/common/Button';
+import { Modal } from '../components/common/Modal';
+
+const PHNOM_PENH_DISTRICTS = [
+  'Khan Boeng Keng Kang (BKK)',
+  'Khan Chamkarmon',
+  'Khan Daun Penh',
+  'Khan Tuol Kouk',
+  'Khan Prampir Makara',
+  'Khan Sen Sok',
+  'Khan Chbar Ampov',
+  'Khan Meanchey',
+  'Khan Russey Keo',
+  'Khan Chroy Changvar'
+];
+
+export const Checkout = () => {
+  const { t, language, formatCurrency, formatDualCurrency } = useLanguage();
+  const { items, subtotal, deliveryFee, discount, total, clearCart } = useCart();
+  const { createOrder, storeSettings } = useRestaurant();
+  const { customerUser } = useAuth();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
+
+  const isKm = language === 'km';
+
+  // State
+  const [orderType, setOrderType] = useState('delivery'); // delivery | pickup
+  const [paymentMethod, setPaymentMethod] = useState('khqr'); // khqr | cod (default: khqr)
+  const [showKhqrModal, setShowKhqrModal] = useState(false);
+  const [submittedOrder, setSubmittedOrder] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Bakong KHQR states
+  const [khqrData, setKhqrData] = useState(null);
+  const [khqrLoading, setKhqrLoading] = useState(false);
+  const [khqrTimeLeft, setKhqrTimeLeft] = useState(120);
+  const [khqrPaid, setKhqrPaid] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(false);
+  // 'auto' = auto-poll every 10s | 'manual' = only check when user clicks
+  const [khqrCheckMode, setKhqrCheckMode] = useState('manual');
+  // true when Bakong API returns daily rate-limit error
+  const [apiLimitHit, setApiLimitHit] = useState(false);
+
+  const [formData, setFormData] = useState({
+    fullName: customerUser?.name || '',
+    phone: customerUser?.phone || '',
+    email: customerUser?.email || '',
+    district: PHNOM_PENH_DISTRICTS[0],
+    address: customerUser?.address || '',
+    pickupTime: '12:30',
+    notes: ''
+  });
+
+  // Auto-fill when customerUser updates
+  React.useEffect(() => {
+    if (customerUser) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: prev.fullName || customerUser.name || '',
+        phone: prev.phone || customerUser.phone || '',
+        email: prev.email || customerUser.email || '',
+        address: prev.address || customerUser.address || ''
+      }));
+    }
+  }, [customerUser]);
+
+  const [errors, setErrors] = useState({});
+
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: null }));
+    }
+  };
+
+  const validate = () => {
+    const errs = {};
+    if (!formData.fullName.trim()) errs.fullName = t('checkout.validation_required');
+    if (!formData.phone.trim()) {
+      errs.phone = t('checkout.validation_required');
+    } else if (!/^[0-9+ \-\(\)]{8,15}$/.test(formData.phone.trim())) {
+      errs.phone = t('checkout.validation_phone');
+    }
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errs.email = t('checkout.validation_email');
+    }
+    if (orderType === 'delivery') {
+      if (!formData.district) errs.district = t('checkout.validation_required');
+      if (!formData.address.trim()) errs.address = t('checkout.validation_required');
+    }
+
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  // Generate dynamic Bakong KHQR
+  const handleInitiateKhqr = async () => {
+    if (!validate()) return;
+
+    if (items.length === 0) {
+      showToast(t('cart.empty_title'), 'error');
+      navigate('/menu');
+      return;
+    }
+
+    const payTotal = orderType === 'delivery' ? total : total - deliveryFee;
+    const khrAmount = Math.max(100, Math.round(payTotal * 4100));
+
+    setShowKhqrModal(true);
+    setKhqrLoading(true);
+    setKhqrTimeLeft(120);
+    setKhqrPaid(false);
+    setKhqrData(null);
+    setKhqrCheckMode('manual'); // default: manual to save Bakong API quota
+    setApiLimitHit(false);   // reset rate limit flag
+
+    const billNumber = `PY-ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+    const res = await apiService.generateBakongKHQR({
+      amount: khrAmount,
+      currency: 'KHR',
+      billNumber,
+      storeLabel: 'Phum Yeung Restaurant'
+    });
+
+    setKhqrLoading(false);
+    if (res.success && res.data) {
+      setKhqrData(res.data);
+    } else {
+      showToast(res.error || 'Failed to generate Bakong KHQR', 'error');
+    }
+  };
+
+  // Check transaction status via MD5
+  const checkPaymentStatus = async (manual = false) => {
+    if (!khqrData?.md5 || khqrPaid) return false;
+    if (manual) setCheckingPayment(true);
+
+    try {
+      const checkRes = await apiService.checkBakongTransaction(khqrData.md5);
+
+      // Detect Bakong daily rate limit hit
+      if (checkRes.isRateLimited || (checkRes.responseCode === 1 &&
+        typeof checkRes.responseMessage === 'string' &&
+        checkRes.responseMessage.toLowerCase().includes('limit'))) {
+        setApiLimitHit(true);
+        setKhqrCheckMode('manual'); // stop auto-polling to save remaining quota
+        if (manual) {
+          showToast('⚠️ Bakong API ដល់ដែនកំណត់ ១០០ ដងក្នុងមួយថ្ងៃ។ សូមចុច "បានទូទាត់រួចហើយ" ដើម្បីបញ្ជូនបន្ត។', 'warning');
+        }
+        return false;
+      }
+
+      // Bakong returns responseCode === 0 when paid, and data contains the transaction hash
+      const isPaid =
+        checkRes.isPaid === true ||
+        checkRes.responseCode === 0 ||
+        checkRes.data?.responseCode === 0 ||
+        Boolean(checkRes.data?.hash);
+
+      if (isPaid) {
+        setKhqrPaid(true);
+        setApiLimitHit(false);
+        showToast('ការទូទាត់តាម Bakong KHQR ទទួលបានជោគជ័យ!', 'success');
+        setTimeout(() => {
+          executeOrderCreation();
+        }, 1000);
+        return true;
+      } else if (manual) {
+        showToast('មិនទាន់ឃើញការទូទាត់នៅឡើយទេ។ សូមពិនិត្យមើល App ធនាគាររបស់អ្នក។', 'warning');
+      }
+    } catch (err) {
+      if (manual) {
+        showToast('មិនអាចពិនិត្យស្ថានភាពបានទេ សូមព្យាយាមម្តងទៀត', 'error');
+      }
+    } finally {
+      if (manual) setCheckingPayment(false);
+    }
+    return false;
+  };
+
+  // 1. Countdown Timer (decrements every 1 second until 0)
+  React.useEffect(() => {
+    if (!showKhqrModal || khqrPaid || khqrTimeLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setKhqrTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [showKhqrModal, khqrPaid, khqrTimeLeft]);
+
+  // 2. Bakong KHQR Verification Polling — only active in 'auto' mode (every 10s)
+  React.useEffect(() => {
+    if (!showKhqrModal || !khqrData?.md5 || khqrPaid || khqrTimeLeft <= 0) return;
+    if (khqrCheckMode !== 'auto') return; // skip polling in manual mode
+
+    // Check once promptly on open / mode switch
+    const initialTimer = setTimeout(() => {
+      checkPaymentStatus(false);
+    }, 800);
+
+    // Poll every 10 seconds to conserve Bakong daily quota
+    const pollInterval = setInterval(() => {
+      checkPaymentStatus(false);
+    }, 10000);
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(pollInterval);
+    };
+  }, [showKhqrModal, khqrData?.md5, khqrPaid, khqrTimeLeft, khqrCheckMode]);
+
+
+  const handlePlaceOrder = (e) => {
+    if (e) e.preventDefault();
+    if (storeSettings?.isOpen === false) {
+      showToast(t('checkout.store_closed_warning'), 'error');
+      return;
+    }
+
+    if (!validate()) return;
+
+    if (items.length === 0) {
+      showToast(t('cart.empty_title'), 'error');
+      navigate('/menu');
+      return;
+    }
+
+    // If KHQR is chosen, generate dynamic KHQR and prompt scan modal first
+    if (paymentMethod === 'khqr' && !showKhqrModal) {
+      handleInitiateKhqr();
+      return;
+    }
+
+    executeOrderCreation();
+  };
+
+  const executeOrderCreation = () => {
+    setSubmitting(true);
+    setTimeout(async () => {
+      const orderPayload = {
+        customerName: formData.fullName.trim(),
+        phone: formData.phone.trim(),
+        email: formData.email.trim(),
+        orderType,
+        deliveryDistrict: orderType === 'delivery' ? formData.district : null,
+        address: orderType === 'delivery' ? `${formData.district}, ${formData.address.trim()}` : 'Central Kitchen Hub Pickup',
+        pickupTime: orderType === 'pickup' ? formData.pickupTime : '',
+        notes: formData.notes.trim(),
+        paymentMethod,
+        items: [...items],
+        subtotal,
+        deliveryFee: orderType === 'delivery' ? deliveryFee : 0,
+        discount,
+        total: orderType === 'delivery' ? total : total - deliveryFee
+      };
+
+      const newOrder = await createOrder(orderPayload);
+      setSubmittedOrder(newOrder || orderPayload);
+      clearCart();
+      setShowKhqrModal(false);
+      setSubmitting(false);
+      showToast(t('checkout.order_success_title'), 'success');
+    }, 600);
+  };
+
+  const dualTotal = formatDualCurrency(total);
+
+  // If order is completed, show confirmation view
+  if (submittedOrder && submittedOrder.total !== undefined) {
+    const orderTotal = Number(submittedOrder.total || 0);
+    const orderDual = formatDualCurrency(orderTotal);
+    const orderItems = Array.isArray(submittedOrder.items) ? submittedOrder.items : [];
+    const orderId = submittedOrder.id || submittedOrder.orderId || 'PY-ORD-0000';
+
+    return (
+      <div className="section">
+        <div className="container">
+          <div className="confirmation-card">
+            <div className="confirmation-card__icon">
+              <CheckCircle size={44} />
+            </div>
+            <h2>{t('checkout.order_success_title')}</h2>
+            <p style={{ color: 'var(--color-text-muted)' }}>{t('checkout.order_success_desc')}</p>
+
+            <div style={{ margin: 'var(--space-md) 0' }}>
+              <span style={{ fontWeight: 600 }}>{t('checkout.order_id')} </span>
+              <strong style={{ color: 'var(--color-primary)', fontSize: '1.3rem' }}>
+                {orderId}
+              </strong>
+            </div>
+
+            {/* Receipt details */}
+            <div className="confirmation-receipt">
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span>{t('checkout.full_name')}:</span>
+                <strong>{submittedOrder.customerName}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span>{t('checkout.phone')}:</span>
+                <strong>{submittedOrder.phone}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span>{t('checkout.order_type')}:</span>
+                <strong>{t(`checkout.${submittedOrder.orderType}`)}</strong>
+              </div>
+              {submittedOrder.address && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span>{t('checkout.delivery_address')}:</span>
+                  <strong>{submittedOrder.address}</strong>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span>{t('checkout.payment_method')}:</span>
+                <strong>{submittedOrder.paymentMethod === 'khqr' ? 'Bakong KHQR' : 'COD'}</strong>
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--color-border)', margin: '12px 0' }} />
+
+              <div>
+                <h4 style={{ marginBottom: '8px' }}>{t('cart.item')} ({orderItems.length}):</h4>
+                {orderItems.map((it, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '4px' }}>
+                    <span>{it.quantity}x {isKm ? (it.name_km || it.nameKm || it.name) : (it.name_en || it.nameEn || it.name)}</span>
+                    <span>{formatCurrency((it.price || 0) * (it.quantity || 1))}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--color-border)', margin: '12px 0' }} />
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '1.1rem' }}>
+                <span>{t('cart.grand_total')}:</span>
+                <span style={{ color: 'var(--color-primary)' }}>
+                  {orderDual.usd} ({orderDual.khr})
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link to={`/track-order?id=${orderId}`}>
+                <Button variant="primary" icon={<Truck size={18} />}>
+                  {t('checkout.track_order_btn')}
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                onClick={() => window.print()}
+                icon={<Printer size={18} />}
+              >
+                {t('checkout.print_receipt')}
+              </Button>
+              <Link to="/">
+                <Button variant="ghost">
+                  {t('checkout.back_home')}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If cart is empty, redirect
+  if (items.length === 0) {
+    return (
+      <div className="container section empty-state">
+        <h2>{t('cart.empty_title')}</h2>
+        <p>{t('cart.empty_subtitle')}</p>
+        <Link to="/menu" style={{ marginTop: 'var(--space-md)', display: 'inline-block' }}>
+          <Button variant="primary">{t('cart.browse_menu')}</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="checkout-page section">
+      <div className="container">
+        <div style={{ marginBottom: 'var(--space-xl)' }}>
+          <Link to="/cart" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--color-primary)', fontSize: '0.9rem' }}>
+            <ArrowLeft size={16} />
+            <span>{t('cart.title')}</span>
+          </Link>
+          <h1 style={{ color: 'var(--color-primary-dark)', marginTop: '4px' }}>
+            {t('checkout.title')}
+          </h1>
+          <p style={{ color: 'var(--color-text-muted)' }}>{t('checkout.subtitle')}</p>
+        </div>
+
+        {storeSettings?.isOpen === false && (
+          <div style={{ backgroundColor: '#ffebee', color: 'var(--color-danger)', padding: '14px', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-lg)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <AlertCircle size={24} />
+            <span style={{ fontWeight: 600 }}>{t('checkout.store_closed_warning')}</span>
+          </div>
+        )}
+
+        <div className="checkout-layout">
+          {/* Left: Form */}
+          <form onSubmit={handlePlaceOrder}>
+            {/* 1. Dining Option Selector (Delivery vs Pickup Only) */}
+            <div className="checkout-section">
+              <h3 className="checkout-section__title">
+                <Truck size={20} />
+                <span>{t('checkout.order_type')}</span>
+              </h3>
+
+              <div className="order-type-selector" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                <div
+                  className={`order-type-btn ${orderType === 'delivery' ? 'order-type-btn--active' : ''}`}
+                  onClick={() => setOrderType('delivery')}
+                >
+                  <Truck size={26} />
+                  <span style={{ fontWeight: 600 }}>{t('checkout.delivery')}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Within 20 - 35 mins</span>
+                </div>
+                <div
+                  className={`order-type-btn ${orderType === 'pickup' ? 'order-type-btn--active' : ''}`}
+                  onClick={() => setOrderType('pickup')}
+                >
+                  <ShoppingBag size={26} />
+                  <span style={{ fontWeight: 600 }}>{t('checkout.pickup')}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>BKK1 Kitchen Hub</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Customer Information */}
+            <div className="checkout-section">
+              <h3 className="checkout-section__title">
+                <span>{t('checkout.customer_info')}</span>
+              </h3>
+
+              {!customerUser ? (
+                <div style={{ backgroundColor: 'var(--color-bg-alt)', border: '1px dashed var(--color-border)', borderRadius: 'var(--radius-md)', padding: '10px 14px', marginBottom: 'var(--space-md)', fontSize: '0.88rem' }}>
+                  {isKm ? 'មានគណនីរួចហើយមែនទេ? ' : 'Already have an account? '}
+                  <Link to="/auth" state={{ from: '/checkout' }} style={{ color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'underline' }}>
+                    {isKm ? 'ចូលគណនីដើម្បីបំពេញព័ត៌មានដោយស្វ័យប្រវត្តិ' : 'Sign in to auto-fill your delivery info'}
+                  </Link>
+                </div>
+              ) : (
+                <div style={{ backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 'var(--radius-md)', padding: '8px 14px', marginBottom: 'var(--space-md)', fontSize: '0.88rem', color: '#065f46', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <CheckCircle size={16} />
+                  <span>{isKm ? `បំពេញដោយស្វ័យប្រវត្តិតាមគណនី: ${customerUser.name} (${customerUser.email})` : `Auto-filled from account: ${customerUser.name} (${customerUser.email})`}</span>
+                </div>
+              )}
+
+              <div className="checkout-form-grid">
+                {/* Full Name */}
+                <div className="form-group">
+                  <label className="form-label form-label--required">{t('checkout.full_name')}</label>
+                  <input
+                    type="text"
+                    className={`form-input ${errors.fullName ? 'form-input--error' : ''}`}
+                    value={formData.fullName}
+                    onChange={(e) => handleInputChange('fullName', e.target.value)}
+                    placeholder={isKm ? 'ឈ្មោះរបស់អ្នក' : 'Your full name'}
+                  />
+                  {errors.fullName && <span className="form-error">{errors.fullName}</span>}
+                </div>
+
+                {/* Phone */}
+                <div className="form-group">
+                  <label className="form-label form-label--required">{t('checkout.phone')}</label>
+                  <input
+                    type="tel"
+                    className={`form-input ${errors.phone ? 'form-input--error' : ''}`}
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    placeholder="012 345 678"
+                  />
+                  {errors.phone && <span className="form-error">{errors.phone}</span>}
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="form-group">
+                <label className="form-label">{t('checkout.email')}</label>
+                <input
+                  type="email"
+                  className={`form-input ${errors.email ? 'form-input--error' : ''}`}
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  placeholder="example@mail.com"
+                />
+                {errors.email && <span className="form-error">{errors.email}</span>}
+              </div>
+
+              {/* Conditional Delivery Address with District */}
+              {orderType === 'delivery' && (
+                <>
+                  <div className="form-group">
+                    <label className="form-label form-label--required">{t('checkout.district')}</label>
+                    <select
+                      className="form-select"
+                      value={formData.district}
+                      onChange={(e) => handleInputChange('district', e.target.value)}
+                    >
+                      {PHNOM_PENH_DISTRICTS.map((dist) => (
+                        <option key={dist} value={dist}>
+                          {dist}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label form-label--required">{t('checkout.delivery_address')}</label>
+                    <textarea
+                      rows={2}
+                      className={`form-textarea ${errors.address ? 'form-textarea--error' : ''}`}
+                      value={formData.address}
+                      onChange={(e) => handleInputChange('address', e.target.value)}
+                      placeholder={isKm ? 'ផ្ទះលេខ, ផ្លូវ, សង្កាត់, ចំណាំទីតាំង (ឧ. ជិតវិមានឯករាជ្យ)...' : 'House/Street/Building, Landmark details...'}
+                    />
+                    {errors.address && <span className="form-error">{errors.address}</span>}
+                  </div>
+                </>
+              )}
+
+              {orderType === 'pickup' && (
+                <div className="form-group">
+                  <label className="form-label form-label--required">{t('checkout.pickup_time')}</label>
+                  <input
+                    type="time"
+                    className="form-input"
+                    value={formData.pickupTime}
+                    onChange={(e) => handleInputChange('pickupTime', e.target.value)}
+                  />
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                    Pick up directly at Phum Yeung Kitchen Hub, BKK1, Phnom Penh
+                  </span>
+                </div>
+              )}
+
+              {/* Special delivery notes */}
+              <div className="form-group">
+                <label className="form-label">{t('checkout.notes')}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={formData.notes}
+                  onChange={(e) => handleInputChange('notes', e.target.value)}
+                  placeholder={isKm ? 'ចំណាំសម្រាប់ការដឹកជញ្ជូន (ឧ. ដល់ហើយខលមក)...' : 'Call upon arrival, leave at reception...'}
+                />
+              </div>
+            </div>
+
+            {/* 3. Payment Method */}
+            <div className="checkout-section">
+              <h3 className="checkout-section__title">
+                <CreditCard size={20} />
+                <span>{t('checkout.payment_method')}</span>
+              </h3>
+
+              <div className="payment-method-selector">
+                <div
+                  className={`payment-option ${paymentMethod === 'khqr' ? 'payment-option--active' : ''}`}
+                  onClick={() => setPaymentMethod('khqr')}
+                >
+                  <QrCode size={24} color="#e11938" />
+                  <div>
+                    <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>{t('checkout.payment_khqr')}</span>
+                      <span style={{ backgroundColor: '#e11938', color: '#fff', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                        BAKONG KHQR
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                      ABA, ACLEDA, Wing & all Cambodian Banks
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className={`payment-option ${paymentMethod === 'cod' ? 'payment-option--active' : ''}`}
+                  onClick={() => setPaymentMethod('cod')}
+                >
+                  <Banknote size={24} color="var(--color-primary)" />
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{t('checkout.payment_cod')}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                      Pay driver upon receiving food
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              type="submit"
+              disabled={submitting || storeSettings?.isOpen === false}
+            >
+              {submitting ? t('checkout.submitting') : `${t('checkout.place_order')} • ${dualTotal.usd}`}
+            </Button>
+          </form>
+
+          {/* Right: Items in Order */}
+          <div className="card" style={{ padding: 'var(--space-lg)' }}>
+            <h3 style={{ marginBottom: 'var(--space-md)', color: 'var(--color-primary-dark)' }}>
+              {t('cart.order_summary')}
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)', marginBottom: 'var(--space-md)' }}>
+              {items.map((item) => (
+                <div key={item.cartItemId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <img src={item.image} alt={isKm ? item.name_km : item.name_en} style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{isKm ? item.name_km : item.name_en}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>x {item.quantity}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: 600 }}>{formatCurrency(item.price * item.quantity)}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-sm)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.9rem' }}>
+                <span>{t('cart.subtotal')}:</span>
+                <span>{formatCurrency(subtotal)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.9rem' }}>
+                <span>{t('cart.delivery_fee')}:</span>
+                <span>{deliveryFee === 0 ? t('cart.free_delivery') : formatCurrency(deliveryFee)}</span>
+              </div>
+              {discount > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: 'var(--color-accent)', fontSize: '0.9rem' }}>
+                  <span>{t('cart.discount')}:</span>
+                  <span>-{formatCurrency(discount)}</span>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', paddingTop: '10px', borderTop: '2px dashed var(--color-border)', fontWeight: 800, fontSize: '1.2rem' }}>
+                <span>{t('cart.grand_total')}:</span>
+                <span style={{ color: 'var(--color-primary)' }}>{dualTotal.usd}</span>
+              </div>
+              <div style={{ textAlign: 'right', fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                {dualTotal.khr}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bakong KHQR Modal */}
+      <Modal
+        isOpen={showKhqrModal}
+        onClose={() => {
+          setShowKhqrModal(false);
+          setKhqrPaid(false);
+        }}
+        title="Bakong KHQR"
+        maxWidth="410px"
+      >
+        <div style={{ textAlign: 'center', margin: '-1.25rem -1.25rem 0 -1.25rem' }}>
+          {/* Official Red KHQR Header */}
+          <div style={{
+            background: 'linear-gradient(135deg, #E11938 0%, #B91C1C 100%)',
+            padding: '1.25rem 1.25rem 1rem 1.25rem',
+            color: '#ffffff',
+            borderRadius: '12px 12px 0 0'
+          }}>
+            {/* Logo + KHQR Badge row */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '8px' }}>
+              <img
+                src="/phum_yeung_logo.jpg"
+                alt="Phum Yeung"
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: '2px solid rgba(255,255,255,0.7)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                }}
+              />
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                backgroundColor: 'rgba(255, 255, 255, 0.22)',
+                padding: '4px 14px',
+                borderRadius: '20px',
+                fontSize: '0.8rem',
+                fontWeight: 800,
+                letterSpacing: '1px'
+              }}>
+                <span style={{ color: '#ffffff' }}>KHQR</span>
+                <span style={{ fontSize: '0.7rem', opacity: 0.9, fontWeight: 600 }}>BAKONG</span>
+              </div>
+            </div>
+            <h3 style={{ margin: '2px 0', fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>
+              Phum Yeung Restaurant
+            </h3>
+            <div style={{ fontSize: '0.82rem', opacity: 0.92, marginTop: '2px' }}>
+              Bakong ID: <strong style={{ color: '#ffffff' }}>{khqrData?.bakongAccountID || 'vatana@bkrt'}</strong>
+            </div>
+          </div>
+
+          <div style={{ padding: '1.25rem 1.25rem 1.5rem 1.25rem' }}>
+            {khqrLoading ? (
+              <div style={{ padding: '50px 20px', color: 'var(--color-text-muted)' }}>
+                <RefreshCw size={28} style={{ animation: 'spin 1.5s linear infinite', margin: '0 auto 12px' }} />
+                <p style={{ fontWeight: 600 }}>{t('common.loading')} Bakong KHQR...</p>
+              </div>
+            ) : khqrData?.qrImage ? (
+              <div>
+                {/* QR Code Container */}
+                <div style={{
+                  position: 'relative',
+                  background: '#ffffff',
+                  padding: '10px',
+                  borderRadius: '16px',
+                  display: 'inline-block',
+                  maxWidth: '230px',
+                  width: '100%',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
+                  border: '1px solid #E5E7EB',
+                  overflow: 'hidden'
+                }}>
+                  <img
+                    src={khqrData.qrImage}
+                    alt="Bakong KHQR"
+                    style={{
+                      width: '100%',
+                      maxWidth: '210px',
+                      height: 'auto',
+                      aspectRatio: '1 / 1',
+                      display: 'block',
+                      margin: '0 auto',
+                      filter: khqrTimeLeft <= 0 && !khqrPaid ? 'blur(4px) grayscale(90%)' : 'none',
+                      transition: 'filter 0.3s ease'
+                    }}
+                  />
+                  {khqrTimeLeft <= 0 && !khqrPaid && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '16px',
+                      textAlign: 'center'
+                    }}>
+                      <AlertCircle size={38} color="#DC2626" style={{ marginBottom: '6px' }} />
+                      <strong style={{ color: '#DC2626', fontSize: '0.98rem', fontWeight: 700 }}>កូដ QR ផុតកំណត់ហើយ</strong>
+                      <span style={{ fontSize: '0.78rem', color: '#6B7280', marginTop: '2px' }}>QR Code Expired</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Amount */}
+                <div style={{ marginTop: '0.9rem' }}>
+                  <div style={{ fontSize: '1.65rem', fontWeight: 800, color: '#111827', letterSpacing: '-0.5px' }}>
+                    {khqrData.amount?.toLocaleString()} ៛
+                  </div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#6B7280', marginTop: '1px' }}>
+                    ≈ {dualTotal.usd} USD
+                  </div>
+                </div>
+
+                {/* Status & Countdown Timer */}
+                <div style={{ marginTop: '0.9rem' }}>
+                  {khqrPaid ? (
+                    <div style={{
+                      padding: '10px 16px',
+                      backgroundColor: '#ECFDF5',
+                      borderRadius: '12px',
+                      border: '1px solid #A7F3D0',
+                      color: '#065F46',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
+                    }}>
+                      <CheckCircle size={20} color="#10B981" />
+                      <span>ការទូទាត់ទទួលបានជោគជ័យ! កំពុងបញ្ជូន...</span>
+                    </div>
+                  ) : khqrTimeLeft <= 0 ? (
+                    <div style={{
+                      padding: '10px 14px',
+                      backgroundColor: '#FEF2F2',
+                      borderRadius: '12px',
+                      border: '1px solid #FECACA',
+                      color: '#991B1B',
+                      fontSize: '0.85rem',
+                      fontWeight: 600
+                    }}>
+                      ⚠️ កូដ QR បានផុតកំណត់រយៈពេល ១២០ វិនាទី
+                    </div>
+                  ) : (
+                    <div style={{
+                      padding: '7px 14px',
+                      backgroundColor: '#F8FAFC',
+                      borderRadius: '24px',
+                      border: '1px solid #E2E8F0',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '0.82rem',
+                      color: '#475569'
+                    }}>
+                      <span style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        backgroundColor: '#10B981',
+                        display: 'inline-block',
+                        boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.2)'
+                      }} />
+                      <span>រង់ចាំការទូទាត់</span>
+                      <span style={{ color: '#CBD5E1' }}>•</span>
+                      <span style={{ fontWeight: 700, color: '#DC2626' }}>{khqrTimeLeft}s</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions / Status indicator */}
+                <div style={{ marginTop: '1rem' }}>
+                  {khqrTimeLeft <= 0 && !khqrPaid ? (
+                    <Button
+                      variant="primary"
+                      fullWidth
+                      onClick={handleInitiateKhqr}
+                      icon={<RefreshCw size={16} />}
+                      style={{ borderRadius: '12px', padding: '10px' }}
+                    >
+                      🔄 បង្កើតកូដ QR ថ្មី (Generate New QR)
+                    </Button>
+                  ) : !khqrPaid ? (
+                    <div>
+                      {/* Rate Limit Warning Banner */}
+                      {apiLimitHit && (
+                        <div style={{
+                          backgroundColor: '#FFFBEB',
+                          border: '1px solid #FCD34D',
+                          borderRadius: '10px',
+                          padding: '10px 14px',
+                          marginBottom: '0.75rem',
+                          fontSize: '0.8rem',
+                          color: '#92400E',
+                          textAlign: 'left'
+                        }}>
+                          <div style={{ fontWeight: 700, marginBottom: '3px' }}>⚠️ Bakong API ដល់ដែនកំណត់ប្រចាំថ្ងៃ</div>
+                          <div style={{ opacity: 0.85 }}>បើអ្នកបានទូទាត់ពិតប្រាកដ សូមចុច <strong>"បានទូទាត់រួចហើយ"</strong> ខាងក្រោម ដើម្បីបញ្ជូនការបញ្ជាទិញ។</div>
+                        </div>
+                      )}
+
+                      {/* Mode Toggle: Auto / Manual */}
+                      <div style={{
+                        display: 'flex',
+                        backgroundColor: '#F1F5F9',
+                        borderRadius: '12px',
+                        padding: '3px',
+                        gap: '3px',
+                        marginBottom: '0.75rem'
+                      }}>
+                        <button
+                          onClick={() => !apiLimitHit && setKhqrCheckMode('auto')}
+                          style={{
+                            flex: 1,
+                            padding: '7px 10px',
+                            borderRadius: '10px',
+                            border: 'none',
+                            cursor: apiLimitHit ? 'not-allowed' : 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.8rem',
+                            transition: 'all 0.2s',
+                            backgroundColor: khqrCheckMode === 'auto' ? '#ffffff' : 'transparent',
+                            color: apiLimitHit ? '#CBD5E1' : (khqrCheckMode === 'auto' ? '#10B981' : '#64748B'),
+                            boxShadow: khqrCheckMode === 'auto' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+                            opacity: apiLimitHit ? 0.5 : 1
+                          }}
+                        >
+                          <span style={{ marginRight: '4px' }}>🔁</span>
+                          Auto
+                        </button>
+                        <button
+                          onClick={() => setKhqrCheckMode('manual')}
+                          style={{
+                            flex: 1,
+                            padding: '7px 10px',
+                            borderRadius: '10px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.8rem',
+                            transition: 'all 0.2s',
+                            backgroundColor: khqrCheckMode === 'manual' ? '#ffffff' : 'transparent',
+                            color: khqrCheckMode === 'manual' ? '#3B82F6' : '#64748B',
+                            boxShadow: khqrCheckMode === 'manual' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none'
+                          }}
+                        >
+                          <span style={{ marginRight: '4px' }}>👆</span>
+                          Manual
+                        </button>
+                      </div>
+
+                      {/* Status line */}
+                      {khqrCheckMode === 'auto' && !apiLimitHit ? (
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          fontSize: '0.78rem',
+                          color: '#64748B',
+                          backgroundColor: '#F0FDF4',
+                          padding: '8px 12px',
+                          borderRadius: '10px',
+                          border: '1px solid #BBF7D0'
+                        }}>
+                          <span style={{
+                            display: 'inline-block',
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            backgroundColor: '#10B981',
+                            animation: 'pulse 1.5s infinite'
+                          }} />
+                          <span style={{ color: '#065F46', fontWeight: 600 }}>ត្រួតពិនិត្យដោយស្វ័យប្រវត្តិរៀងរាល់ ១០ វិនាទី</span>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {!apiLimitHit && (
+                            <Button
+                              variant="outline"
+                              fullWidth
+                              disabled={checkingPayment}
+                              onClick={() => checkPaymentStatus(true)}
+                              icon={<RefreshCw size={15} style={{ animation: checkingPayment ? 'spin 1s linear infinite' : 'none' }} />}
+                              style={{ borderRadius: '12px', borderColor: '#3B82F6', color: '#3B82F6', fontWeight: 700 }}
+                            >
+                              {checkingPayment ? 'កំពុងពិនិត្យ...' : '👆 ពិនិត្យការទូទាត់ (Check Once)'}
+                            </Button>
+                          )}
+
+                          {/* "I Already Paid" override — shown when rate limit hit */}
+                          {apiLimitHit && (
+                            <Button
+                              variant="primary"
+                              fullWidth
+                              onClick={() => {
+                                showToast('✅ ការបញ្ជូនការបញ្ជាទិញ... សូមរង់ចាំ!', 'success');
+                                setTimeout(() => executeOrderCreation(), 800);
+                              }}
+                              style={{ borderRadius: '12px', backgroundColor: '#16A34A', borderColor: '#16A34A', fontWeight: 700 }}
+                            >
+                              ✅ បានទូទាត់រួចហើយ — បញ្ជូនការបញ្ជាទិញ
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Subtle bank support footer */}
+                <div style={{
+                  marginTop: '1rem',
+                  fontSize: '0.73rem',
+                  color: '#9CA3AF',
+                  textAlign: 'center'
+                }}>
+                  ស្កេនទូទាត់ជាមួយ ABA, ACLEDA, Bakong និងធនាគារនានា
+                </div>
+              </div>
+            ) : (
+              <div style={{ color: '#DC2626', padding: '20px' }}>
+                <p>មិនអាចបង្កើតកូដ KHQR បានទេ។ សូមព្យាយាមម្តងទៀត។</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleInitiateKhqr}
+                  style={{ marginTop: '10px' }}
+                >
+                  🔄 ព្យាយាមម្តងទៀត
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+};

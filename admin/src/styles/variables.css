@@ -1,0 +1,69 @@
+:root {
+  /* Khmer Royal & Warm Appetizing Colors */
+  --color-primary: #800020;         /* Deep Khmer Crimson / Burgundy */
+  --color-primary-dark: #5c0017;
+  --color-primary-light: #a31c38;
+  --color-primary-subtle: #fae8eb;
+
+  --color-secondary: #c59b27;       /* Angkor Warm Gold / Amber */
+  --color-secondary-dark: #9e7a17;
+  --color-secondary-light: #e5be4f;
+  --color-secondary-subtle: #fdf8e6;
+
+  --color-accent: #2e7d32;          /* Organic Herb Green */
+  --color-accent-subtle: #e8f5e9;
+
+  --color-bg-main: #fdfbf7;         /* Warm Ivory Cream */
+  --color-bg-surface: #ffffff;
+  --color-bg-subtle: #f7f3ec;
+  --color-bg-dark: #1f1a17;
+
+  --color-text-main: #231f1e;       /* Deep Charcoal */
+  --color-text-muted: #6b635f;
+  --color-text-light: #9c948f;
+  --color-text-inverse: #ffffff;
+
+  --color-border: #e8e2d8;
+  --color-border-dark: #d5ccbe;
+
+  --color-danger: #c62828;
+  --color-warning: #f57c00;
+  --color-success: #2e7d32;
+  --color-info: #0277bd;
+
+  /* Typography */
+  --font-khmer: 'Kantumruy Pro', 'Noto Sans Khmer', sans-serif;
+  --font-latin: 'Plus Jakarta Sans', 'Kantumruy Pro', system-ui, -apple-system, sans-serif;
+
+  /* Spacing Scale */
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4.5rem;
+
+  /* Border Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(35, 31, 30, 0.06);
+  --shadow-md: 0 4px 12px rgba(35, 31, 30, 0.08);
+  --shadow-lg: 0 10px 25px rgba(35, 31, 30, 0.12);
+  --shadow-xl: 0 20px 40px rgba(35, 31, 30, 0.16);
+
+  /* Transitions */
+  --transition-fast: 0.15s ease-in-out;
+  --transition-normal: 0.25s ease-in-out;
+  --transition-slow: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Layout */
+  --container-max-width: 1440px;
+  --header-height: 80px;
+}
