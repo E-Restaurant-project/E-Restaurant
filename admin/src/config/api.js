@@ -1,6 +1,6 @@
 // Centralized API configuration for Phum Yeung Admin Portal
 export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  BASE_URL: import.meta.env.VITE_API_URL || 'https://phum-yeung-backend.onrender.com/api',
   CURRENCY_RATE: {
     KHR_PER_USD: 4100
   },
@@ -12,4 +12,14 @@ export const API_CONFIG = {
     ORDERS: 'phum_yeung_orders',
     RESERVATIONS: 'phum_yeung_reservations'
   }
+};
+
+export const getImageUrl = (imagePath) => {
+  if (!imagePath) return '';
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  const backendBase = (import.meta.env.VITE_API_URL || API_CONFIG.BASE_URL).replace(/\/api\/?$/, '');
+  const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+  return `${backendBase}${cleanPath}`;
 };

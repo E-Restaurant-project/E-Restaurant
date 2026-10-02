@@ -2,6 +2,7 @@ import React from 'react';
 import { Trash2, Plus, Minus } from 'lucide-react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useCart } from '../../hooks/useCart';
+import { getImageUrl } from '../../config/api';
 
 export const CartItem = ({ item }) => {
   const { language, formatCurrency, t } = useLanguage();
@@ -13,7 +14,7 @@ export const CartItem = ({ item }) => {
 
   return (
     <div className="cart-item">
-      <img src={item.image} alt={name} className="cart-item__img" />
+      <img src={getImageUrl(item.image)} alt={name} className="cart-item__img" />
 
       <div className="cart-item__info">
         <h4>{name}</h4>

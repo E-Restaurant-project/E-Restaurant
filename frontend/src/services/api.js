@@ -1,7 +1,8 @@
 // Frontend API Service Layer connecting to Node.js / Express backend
 // With resilient fallback to offline/localStorage mode if backend server is not reachable
+import { API_CONFIG } from '../config/api';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE = API_CONFIG.BASE_URL;
 
 const getAuthHeaders = () => {
   try {

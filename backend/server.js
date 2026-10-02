@@ -88,6 +88,14 @@ app.use(cors({
     if (/\.vercel\.app$/.test(origin)) {
       return callback(null, true);
     }
+    // Allow Cloudflare Workers & Pages deployments
+    if (/\.(workers|pages)\.dev$/.test(origin)) {
+      return callback(null, true);
+    }
+    // Allow Render deployments
+    if (/\.onrender\.com$/.test(origin)) {
+      return callback(null, true);
+    }
     return callback(new Error(`CORS blocked origin: ${origin}`));
   },
   credentials: true

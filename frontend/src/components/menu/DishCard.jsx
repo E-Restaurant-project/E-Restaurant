@@ -6,6 +6,7 @@ import { useCart } from '../../hooks/useCart';
 import { useToast } from '../../hooks/useToast';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
+import { getImageUrl } from '../../config/api';
 
 export const DishCard = ({ dish }) => {
   const { language, t, formatCurrency } = useLanguage();
@@ -43,7 +44,7 @@ export const DishCard = ({ dish }) => {
     <div className="card card--hover dish-card">
       <Link to={`/menu/${dish.id}`} className="dish-card__media">
         <img
-          src={dish.image}
+          src={getImageUrl(dish.image)}
           alt={name}
           loading="lazy"
           className="dish-card__img"

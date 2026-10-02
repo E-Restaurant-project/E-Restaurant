@@ -10,6 +10,7 @@ import { Badge } from '../components/common/Badge';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { DishFormModal } from '../components/admin/DishFormModal';
 import { DeleteConfirmModal } from '../components/admin/DeleteConfirmModal';
+import { getImageUrl } from '../config/api';
 
 export const AdminMenu = () => {
   const { t, language, formatCurrency } = useLanguage();
@@ -148,7 +149,7 @@ export const AdminMenu = () => {
                   <tr key={dish.id}>
                     <td>
                       <img
-                        src={dish.image}
+                        src={getImageUrl(dish.image)}
                         alt={dish.name_en}
                         className="admin-table__img"
                         loading="lazy"

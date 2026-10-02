@@ -1,9 +1,7 @@
 // Centralized API configuration for Phum Yeung Restaurant
-// Easily swap mock localStorage storage with actual REST/GraphQL backend in production
-
 export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_URL || 'https://api.phumyeung.com/v1',
-  IS_MOCK: true,
+  BASE_URL: import.meta.env.VITE_API_URL || 'https://phum-yeung-backend.onrender.com/api',
+  IS_MOCK: false,
   CURRENCY_RATE: {
     KHR_PER_USD: 4100
   },
@@ -17,4 +15,14 @@ export const API_CONFIG = {
     ORDERS: 'phum_yeung_orders',
     RESERVATIONS: 'phum_yeung_reservations'
   }
+};
+
+export const getImageUrl = (imagePath) => {
+  if (!imagePath) return '';
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  const backendBase = (import.meta.env.VITE_API_URL || API_CONFIG.BASE_URL).replace(/\/api\/?$/, '');
+  const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+  return `${backendBase}${cleanPath}`;
 };

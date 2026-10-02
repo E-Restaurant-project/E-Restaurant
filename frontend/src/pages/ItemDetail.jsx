@@ -17,6 +17,7 @@ import { DishCard } from '../components/menu/DishCard';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { CATEGORIES } from '../data/menu';
+import { getImageUrl } from '../config/api';
 
 export const ItemDetail = () => {
   const { id } = useParams();
@@ -84,7 +85,7 @@ export const ItemDetail = () => {
           <div className="detail-gallery">
             <div className="detail-gallery__main">
               <img
-                src={dish.image}
+                src={getImageUrl(dish.image)}
                 alt={name}
                 className="detail-gallery__img"
                 onError={(e) => {

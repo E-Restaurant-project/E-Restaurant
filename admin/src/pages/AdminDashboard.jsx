@@ -14,6 +14,7 @@ import { useLanguage } from '../hooks/useLanguage';
 import { useRestaurant } from '../hooks/useRestaurant';
 import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
+import { getImageUrl } from '../config/api';
 
 export const AdminDashboard = () => {
   const { t, language, formatCurrency } = useLanguage();
@@ -211,7 +212,7 @@ export const AdminDashboard = () => {
           <div style={{ padding: 'var(--space-md)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-md)' }}>
             {popularDishes.map((dish) => (
               <div key={dish.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
-                <img src={dish.image} alt={isKm ? dish.name_km : dish.name_en} style={{ width: '54px', height: '54px', borderRadius: '8px', objectFit: 'cover' }} />
+                <img src={getImageUrl(dish.image)} alt={isKm ? dish.name_km : dish.name_en} style={{ width: '54px', height: '54px', borderRadius: '8px', objectFit: 'cover' }} />
                 <div style={{ flexGrow: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {isKm ? dish.name_km : dish.name_en}
