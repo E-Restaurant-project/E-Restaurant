@@ -14,9 +14,9 @@
     "admin": "npm --prefix admin run dev",
     "seed": "npm --prefix backend run seed",
     "create:admin": "node backend/scripts/createAdmin.js",
-    "build:frontend": "npm --prefix frontend install && npm --prefix frontend run build",
+    "build:frontend": "npm --prefix frontend install && npm --prefix frontend run build && node scripts/copyImages.js",
     "build:admin": "npm --prefix admin install && npm --prefix admin run build",
-    "build": "npm --prefix frontend install && npm --prefix frontend run build",
+    "build": "npm --prefix frontend install && npm --prefix frontend run build && node scripts/copyImages.js",
     "install:all": "npm --prefix frontend install && npm --prefix admin install && npm --prefix backend install"
   },
   "devDependencies": {
