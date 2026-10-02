@@ -12,6 +12,24 @@ A bilingual (Khmer 🇰🇭 + English 🇬🇧) Cloud Kitchen & Online Food Orde
 
 ```
 E-Restaurant/
+├── admin/                     # React 18 + Vite Admin Dashboard Application
+│   ├── public/                # Static assets & logo
+│   │   └── phum_yeung_logo.jpg
+│   ├── src/
+│   │   ├── components/        # Admin UI components (AdminLayout, Sidebar, Modals)
+│   │   ├── config/            # API endpoints configuration
+│   │   ├── context/           # React Context (Auth, Language, Restaurant, Toast)
+│   │   ├── hooks/             # Custom React hooks
+│   │   ├── locales/           # Bilingual translations (km.json, en.json)
+│   │   ├── pages/             # Admin pages (Dashboard, Menu, Orders, Promos, Settings, Customers)
+│   │   ├── services/          # API service calling Backend
+│   │   ├── styles/            # Admin CSS styles
+│   │   ├── App.jsx            # Admin routes
+│   │   └── main.jsx           # Entrypoint
+│   ├── index.html
+│   ├── vite.config.js
+│   └── package.json
+│
 ├── frontend/                  # React 18 + Vite Frontend Application
 │   ├── public/                # Static assets, fonts, food photos, and icons
 │   │   ├── images/foods/      # 500+ Authentic Khmer food images
@@ -97,20 +115,29 @@ cd ../backend && npm install
 
 ---
 
-### ជំហានទី ២៖ ដំណើរការ Server & Frontend
-
-#### វិធីទី ១៖ ដំណើរការពី Root Directory (ងាយស្រួលបំផុត)
+### ជំហានទី ២៖ ដំណើរការ Server, Frontend & Admin
 - **ដំណើរការ Backend API**:
   ```bash
   npm run dev:backend
   ```
   *(API នឹងដំណើរការលើ `http://localhost:5000`)*
 
-- **ដំណើរការ Frontend Client** (បើក Terminal ទី ២)៖
+- **ដំណើរការ Frontend Client**:
   ```bash
   npm run dev:frontend
   ```
   *(Frontend នឹងដំណើរការលើ `http://localhost:3000`)*
+
+- **ដំណើរការ Admin Dashboard**:
+  ```bash
+  npm run dev:admin
+  ```
+  *(Admin នឹងដំណើរការលើ `http://localhost:5173` ឬ port ដែល Vite បង្ហាញ)*
+
+- **(ឬដំណើរការទាំងអស់ក្នុងពេលតែមួយ)**:
+  ```bash
+  npm run dev
+  ```
 
 #### វិធីទី ២៖ ចូលទៅក្នុង Folder ផ្ទាល់
 ```bash
