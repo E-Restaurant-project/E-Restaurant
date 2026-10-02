@@ -1,35 +1,12 @@
 # 🍲 ភោជនីយដ្ឋាន ភូមិយើង (Phum Yeung Restaurant) - Full Stack E-Restaurant
 
-A production-grade, fully bilingual (Khmer 🇰🇭 + English 🇬🇧) Full-Stack Cloud Kitchen & Online Food Ordering Application built with:
+A bilingual (Khmer 🇰🇭 + English 🇬🇧) Cloud Kitchen & Online Food Ordering Application built with:
 - **Frontend**: React 18 + Vite, Pure CSS (BEM methodology), Context API State Management
-- **Admin Suite**: React 18 Admin Portal with Dashboard Analytics & Menu CRUD
 - **Backend API**: Node.js + Express.js REST API
 - **Database**: MongoDB + Mongoose ODM (Auto-seeding, local & MongoDB Atlas support)
 - **API Documentation**: [`docs/API_DOCUMENTATION.md`](docs/API_DOCUMENTATION.md)
 
 ---
-
-## 📱 Frontend UI Preview & Mockup
-
-> 🔗 **Visual Preview**: [Click here to open full resolution mockup](docs/screenshots/frontend_preview.jpg)
-
-<p align="center">
-  <img src="docs/screenshots/frontend_preview.jpg" alt="Phum Yeung Restaurant Customer Ordering UI Mockup - Authentic Khmer food menu cards, categories filter, shopping cart, bilingual switcher, and prices in USD and KHR" width="100%" />
-</p>
-
----
-
-## 📌 សង្ខេបការងារសម្រេចបាន (Team Progress Summary)
-
-| ផ្នែក (Module) | ស្ថានភាព (Status) | អ្វីដែលបានធ្វើរួចរាល់ (Completed Features) |
-| :--- | :---: | :--- |
-| **Customer Storefront** | ✅ រួចរាល់ | ប្រព័ន្ធពីរភាសា (Khmer 🇰🇭 / English 🇬🇧), តម្រងមុខម្ហូប (Soups, Main, Drinks), កន្ត្រកទំនិញ (Cart), ទំព័រទូទាត់ប្រាក់ (Checkout), តាមដាន Order ID |
-| **Admin Dashboard** | ✅ រួចរាល់ | គ្រប់គ្រងការកុម្ម៉ង់ (Orders), បន្ថែម/កែប្រែមុខម្ហូប (Dish CRUD), កូដបញ្ចុះតម្លៃ (Promo Codes), ការកំណត់ហាង (Store Settings) |
-| **Backend REST API** | ✅ រួចរាល់ | Express API endpoints, MongoDB models, JWT Auth, Bakong KHQR QR Code payload |
-| **ឯកសារ (Documentation)** | ✅ រួចរាល់ | រៀបរាប់លម្អិតក្នុង `docs/API_DOCUMENTATION.md` និង `docs/screenshots/` |
-
----
-
 
 ## 📁 រចនាសម្ព័ន្ធគម្រោង (Project Architecture)
 
