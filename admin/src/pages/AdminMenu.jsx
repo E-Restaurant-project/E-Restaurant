@@ -41,11 +41,12 @@ export const AdminMenu = () => {
 
   // Filtered dishes
   const filteredDishes = dishes.filter((dish) => {
+    if (!dish) return false;
     if (selectedCategory !== 'all' && dish.category !== selectedCategory) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      const matchKm = dish.name_km.toLowerCase().includes(q);
-      const matchEn = dish.name_en.toLowerCase().includes(q);
+      const matchKm = (dish.name_km || '').toLowerCase().includes(q);
+      const matchEn = (dish.name_en || '').toLowerCase().includes(q);
       if (!matchKm && !matchEn) return false;
     }
     return true;
@@ -75,12 +76,15 @@ export const AdminMenu = () => {
     }
   };
 
-  const handleSaveDish = (dishData) => {
+  const handleSaveDish = async (dishData) => {
     if (editingDish) {
-      updateDish(editingDish.id, dishData);
+      await updateDish(editingDish.id, dishData);
       showToast(isKm ? 'បានកែសម្រួលមុខម្ហូបជោគជ័យ!' : 'Dish updated successfully!', 'success');
     } else {
-      addDish(dishData);
+      // Auto-reset filters so the admin immediately sees the newly created dish at top
+      setSelectedCategory('all');
+      setSearchQuery('');
+      await addDish(dishData);
       showToast(isKm ? 'បានបន្ថែមមុខម្ហូបថ្មីជោគជ័យ!' : 'Dish added successfully!', 'success');
     }
   };

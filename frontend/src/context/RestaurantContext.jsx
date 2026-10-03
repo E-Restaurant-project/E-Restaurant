@@ -95,33 +95,44 @@ export const RestaurantProvider = ({ children }) => {
 
   // Fetch from Node.js API on mount if available
   useEffect(() => {
+    let isMounted = true;
     const fetchBackendData = async () => {
       // Dishes
       const dishesRes = await apiService.getDishes();
-      if (dishesRes.success && Array.isArray(dishesRes.data) && dishesRes.data.length > 0) {
-        setDishes(dishesRes.data.map(d => ({ ...d, id: d.dishId || d._id })));
+      if (isMounted && dishesRes.success && Array.isArray(dishesRes.data) && dishesRes.data.length > 0) {
+        setDishes((prevDishes) => {
+          const backendDishes = dishesRes.data.map(d => ({ ...d, id: d.dishId || d._id }));
+          const backendIds = new Set(backendDishes.map(d => d.id || d.dishId));
+          const localOnly = prevDishes.filter(
+            d => !backendIds.has(d.id) && !backendIds.has(d.dishId) && String(d.id).startsWith('dish-')
+          );
+          return [...localOnly, ...backendDishes];
+        });
       }
 
       // Orders
       const ordersRes = await apiService.getOrders();
-      if (ordersRes.success && Array.isArray(ordersRes.data) && ordersRes.data.length > 0) {
+      if (isMounted && ordersRes.success && Array.isArray(ordersRes.data) && ordersRes.data.length > 0) {
         setOrders(ordersRes.data.map(o => ({ ...o, id: o.orderId || o._id })));
       }
 
       // Settings
       const settingsRes = await apiService.getSettings();
-      if (settingsRes.success && settingsRes.data) {
+      if (isMounted && settingsRes.success && settingsRes.data) {
         setStoreSettings(settingsRes.data);
       }
 
       // Promos
       const promosRes = await apiService.getPromos();
-      if (promosRes.success && Array.isArray(promosRes.data) && promosRes.data.length > 0) {
+      if (isMounted && promosRes.success && Array.isArray(promosRes.data) && promosRes.data.length > 0) {
         setPromoCodes(promosRes.data.map(p => ({ ...p, id: p._id || p.id })));
       }
     };
 
     fetchBackendData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Sync to localStorage

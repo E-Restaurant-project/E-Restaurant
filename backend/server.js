@@ -16,6 +16,7 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import { Dish } from './models/Dish.js';
 import { User } from './models/User.js';
 import { Setting } from './models/Setting.js';
+import { serveFoodImage } from './controllers/dishController.js';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -104,6 +105,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static media files (dishes, logos) directly from backend API
+app.get('/images/foods/:filename', serveFoodImage);
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
 

@@ -1,4 +1,5 @@
 import { Dish } from '../models/Dish.js';
+import { StoredImage } from '../models/StoredImage.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -35,18 +36,36 @@ const fileFilter = (req, file, cb) => {
 
 export const uploadMiddleware = multer({
   storage,
-  limits: { fileSize: 8 * 1024 * 1024 }, // 8MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter
 });
 
 // @desc    Upload dish image
 // @route   POST /api/dishes/upload
-export const uploadDishImage = (req, res) => {
+export const uploadDishImage = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No image file uploaded' });
     }
     const imageUrl = `/images/foods/${req.file.filename}`;
+
+    // Read buffer and persist into MongoDB so Render restarts never lose the image
+    try {
+      const fileBuffer = fs.readFileSync(req.file.path);
+      await StoredImage.findOneAndUpdate(
+        { filename: req.file.filename },
+        {
+          filename: req.file.filename,
+          contentType: req.file.mimetype || 'image/jpeg',
+          data: fileBuffer,
+          size: req.file.size
+        },
+        { upsert: true, new: true }
+      );
+    } catch (dbErr) {
+      console.warn('[DishController] Warning: Could not persist image buffer to MongoDB:', dbErr.message);
+    }
+
     res.json({
       success: true,
       imageUrl,
@@ -55,6 +74,39 @@ export const uploadDishImage = (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Serve food image from disk or MongoDB fallback
+export const serveFoodImage = async (req, res, next) => {
+  try {
+    const filename = path.basename(req.params.filename);
+    const localPath = path.join(uploadDir, filename);
+
+    // 1. If available on disk, serve immediately with long-term cache
+    if (fs.existsSync(localPath)) {
+      res.set('Cache-Control', 'public, max-age=31536000, immutable');
+      return res.sendFile(localPath);
+    }
+
+    // 2. Not on disk (e.g. Render restarted/redeployed) -> retrieve from MongoDB Atlas!
+    const stored = await StoredImage.findOne({ filename });
+    if (stored && stored.data) {
+      // Re-write to local disk cache so subsequent reads are instant
+      try {
+        fs.writeFileSync(localPath, stored.data);
+      } catch (_) {}
+
+      res.set('Content-Type', stored.contentType);
+      res.set('Cache-Control', 'public, max-age=31536000, immutable');
+      return res.send(stored.data);
+    }
+
+    // Fallthrough to next middleware (404 handler)
+    return next();
+  } catch (err) {
+    console.error('[ServeFoodImage Error]', err.message);
+    return next();
   }
 };
 
