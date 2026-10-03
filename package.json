@@ -19,12 +19,7 @@
     "build": "npm --prefix frontend run build",
     "install:all": "npm --prefix frontend install && npm --prefix admin install && npm --prefix backend install"
   },
-  "workspaces": [
-    "frontend",
-    "admin",
-    "backend"
-  ],
   "devDependencies": {
-    "concurrently": "^10.0.5"
+    "concurrently": "^9.1.2"
   }
 }
