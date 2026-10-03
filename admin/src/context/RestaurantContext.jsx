@@ -213,6 +213,21 @@ export const RestaurantProvider = ({ children }) => {
     apiService.deleteDish(id);
   };
 
+  const refreshData = async () => {
+    try {
+      const dishesRes = await apiService.getDishes();
+      if (dishesRes && dishesRes.success && Array.isArray(dishesRes.data) && dishesRes.data.length > 0) {
+        const backendDishes = dishesRes.data.map(d => ({ ...d, id: d.dishId || d._id }));
+        setDishes(backendDishes);
+        localStorage.setItem(API_CONFIG.STORAGE_KEYS.MENU, JSON.stringify(backendDishes));
+        return { success: true, count: backendDishes.length };
+      }
+    } catch (e) {
+      console.warn('refreshData error:', e);
+    }
+    return { success: false };
+  };
+
   const getDishById = (id) => {
     return dishes.find((d) => d.id === id || d.dishId === id);
   };
@@ -439,6 +454,7 @@ export const RestaurantProvider = ({ children }) => {
         validatePromoCode,
         categories,
         allCategories,
+        refreshData,
         addCategory,
         updateCategory,
         deleteCategory,

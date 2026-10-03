@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Edit2, Trash2, Search, Star, Flame } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Star, Flame, RefreshCw } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useRestaurant } from '../hooks/useRestaurant';
 import { useToast } from '../hooks/useToast';
@@ -14,7 +14,7 @@ import { getImageUrl } from '../config/api';
 
 export const AdminMenu = () => {
   const { t, language, formatCurrency } = useLanguage();
-  const { dishes, allCategories, addDish, updateDish, deleteDish } = useRestaurant();
+  const { dishes, allCategories, addDish, updateDish, deleteDish, refreshData } = useRestaurant();
   const { showToast } = useToast();
   const isKm = language === 'km';
   const categoryOptions = allCategories && allCategories.length > 0 ? allCategories : CATEGORIES;
@@ -26,6 +26,29 @@ export const AdminMenu = () => {
   const [editingDish, setEditingDish] = useState(null);
   const [dishToDelete, setDishToDelete] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Auto-sync latest dishes from server on page load
+  useEffect(() => {
+    if (typeof refreshData === 'function') {
+      refreshData();
+    }
+  }, []);
+
+  const handleRefresh = async () => {
+    if (typeof refreshData !== 'function') return;
+    setIsRefreshing(true);
+    const res = await refreshData();
+    setIsRefreshing(false);
+    if (res && res.success) {
+      showToast(
+        isKm ? `បានទាញយកទិន្នន័យចុងក្រោយជោគជ័យ (${res.count} មុខម្ហូប)!` : `Synced latest menu (${res.count} dishes)!`,
+        'success'
+      );
+    } else {
+      showToast(isKm ? 'មិនអាចទាក់ទង Server បានទេ' : 'Could not reach server', 'warning');
+    }
+  };
 
   // Auto-open modal if navigating with ?action=add or ?add=true
   useEffect(() => {
@@ -93,9 +116,20 @@ export const AdminMenu = () => {
     <div>
       <div className="admin-topbar">
         <h1 className="admin-topbar__title">{t('admin.nav_menu')}</h1>
-        <Button variant="primary" size="sm" onClick={handleOpenAdd} icon={<Plus size={16} />}>
-          {t('admin.add_dish')}
-        </Button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            icon={<RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />}
+          >
+            {isKm ? 'ទាញយកទិន្នន័យថ្មី' : 'Sync Menu'}
+          </Button>
+          <Button variant="primary" size="sm" onClick={handleOpenAdd} icon={<Plus size={16} />}>
+            {t('admin.add_dish')}
+          </Button>
+        </div>
       </div>
 
       <div className="admin-content">
