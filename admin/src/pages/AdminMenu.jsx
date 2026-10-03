@@ -62,18 +62,33 @@ export const AdminMenu = () => {
     }
   }, [searchParams, setSearchParams]);
 
-  // Filtered dishes
-  const filteredDishes = dishes.filter((dish) => {
-    if (!dish) return false;
-    if (selectedCategory !== 'all' && dish.category !== selectedCategory) return false;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      const matchKm = (dish.name_km || '').toLowerCase().includes(q);
-      const matchEn = (dish.name_en || '').toLowerCase().includes(q);
-      if (!matchKm && !matchEn) return false;
-    }
-    return true;
-  });
+  // Filtered and sorted dishes (newest dishes always at the top)
+  const filteredDishes = React.useMemo(() => {
+    return dishes
+      .filter((dish) => {
+        if (!dish) return false;
+        if (selectedCategory !== 'all' && dish.category !== selectedCategory) return false;
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase().trim();
+          const matchKm = (dish.name_km || '').toLowerCase().includes(q);
+          const matchEn = (dish.name_en || '').toLowerCase().includes(q);
+          if (!matchKm && !matchEn) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        const parseTime = (item) => {
+          if (item.createdAt) return new Date(item.createdAt).getTime();
+          const idStr = String(item.id || item.dishId || '');
+          if (idStr.startsWith('dish-')) {
+            const num = Number(idStr.replace('dish-', ''));
+            if (!isNaN(num) && num > 0) return num;
+          }
+          return 0;
+        };
+        return parseTime(b) - parseTime(a);
+      });
+  }, [dishes, selectedCategory, searchQuery]);
 
   const handleOpenAdd = () => {
     setEditingDish(null);

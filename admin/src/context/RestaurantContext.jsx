@@ -171,15 +171,10 @@ export const RestaurantProvider = ({ children }) => {
     // Send to Node.js backend
     try {
       const res = await apiService.createDish(newDish);
-      if (res && res.success && res.data) {
-        const saved = {
-          ...newDish,
-          ...res.data,
-          id: res.data.dishId || res.data._id || generatedId,
-          dishId: res.data.dishId || generatedId
-        };
-        setDishes((prev) => prev.map(d => (d.id === generatedId ? saved : d)));
-        return saved;
+      if (res && res.success) {
+        // Automatically sync fresh authoritative list from MongoDB so all dishes are visible
+        await refreshData();
+        return res.data || newDish;
       }
     } catch (err) {
       console.warn('[RestaurantContext] addDish API error, dish preserved locally:', err);
@@ -190,27 +185,35 @@ export const RestaurantProvider = ({ children }) => {
   const updateDish = async (id, updatedFields) => {
     setDishes((prev) =>
       prev.map((dish) =>
-        dish.id === id
+        dish.id === id || dish.dishId === id
           ? { ...dish, ...updatedFields, price: Number(updatedFields.price !== undefined ? updatedFields.price : dish.price) }
           : dish
       )
     );
-    // Call Node.js API
-    apiService.updateDish(id, updatedFields);
+    try {
+      await apiService.updateDish(id, updatedFields);
+      await refreshData();
+    } catch (err) {
+      console.warn('[RestaurantContext] updateDish error:', err);
+    }
   };
 
   const toggleDishStock = async (id) => {
-    const dish = dishes.find((d) => d.id === id);
+    const dish = dishes.find((d) => d.id === id || d.dishId === id);
     if (dish) {
       const newStock = dish.inStock === false ? true : false;
-      updateDish(id, { inStock: newStock });
+      await updateDish(id, { inStock: newStock });
     }
   };
 
   const deleteDish = async (id) => {
-    setDishes((prev) => prev.filter((dish) => dish.id !== id));
-    // Call Node.js API
-    apiService.deleteDish(id);
+    setDishes((prev) => prev.filter((dish) => dish.id !== id && dish.dishId !== id));
+    try {
+      await apiService.deleteDish(id);
+      await refreshData();
+    } catch (err) {
+      console.warn('[RestaurantContext] deleteDish error:', err);
+    }
   };
 
   const refreshData = async () => {

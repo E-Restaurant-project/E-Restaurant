@@ -14,6 +14,7 @@ import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { CustomSelect } from '../common/CustomSelect';
 import { apiService } from '../../services/api';
+import { getImageUrl } from '../../config/api';
 
 export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null }) => {
   const { t, language } = useLanguage();
@@ -406,12 +407,16 @@ export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null }) =>
             >
               <div style={{ position: 'relative', width: '100%', height: '220px', backgroundColor: '#0f172a' }}>
                 <img
-                  src={previewUrl}
+                  src={getImageUrl(previewUrl)}
                   alt="Dish Preview"
                   style={{
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover'
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80';
                   }}
                 />
 
