@@ -28,30 +28,12 @@ export const login = async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
     let admin = await User.findOne({ email: cleanEmail });
 
-    // Seed default admin with unbreached strong password if not present
-    if (!admin && cleanEmail === 'admin@phumyeung.com') {
-      admin = await User.create({
-        name: 'Phum Yeung Admin',
-        email: 'admin@phumyeung.com',
-        password: 'PhumYeung@Admin2026!',
-        twoFactorSecret: generateSecret(),
-        role: 'admin',
-        isVerified: true
-      });
-    }
-
     if (!admin || admin.role !== 'admin') {
       return res.status(401).json({ success: false, message: 'Invalid administrator credentials or access denied' });
     }
 
-    let isMatch = await admin.comparePassword(password);
-    
-    // Auto-migrate if admin used previous default password
-    if (!isMatch && password === 'admin123' && cleanEmail === 'admin@phumyeung.com') {
-      admin.password = 'PhumYeung@Admin2026!';
-      await admin.save();
-      isMatch = true;
-    }
+    // SECURITY: Password must pass full bcrypt verification — no hardcoded bypass allowed
+    const isMatch = await admin.comparePassword(password);
 
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
@@ -77,8 +59,7 @@ export const login = async (req, res) => {
       requires2FA: true,
       email: admin.email,
       hasAuthenticatorKey: true,
-      backupCode: '888999',
-      message: '2FA security verification required. Enter code from Google Authenticator, email, or emergency backup code 888999.'
+      message: '2FA security verification required. Enter code from your Google Authenticator app or your email.'
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
