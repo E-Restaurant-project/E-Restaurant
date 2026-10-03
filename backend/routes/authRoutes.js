@@ -2,6 +2,7 @@ import express from 'express';
 import {
   login,
   getAdmin2FASetup,
+  resetAdmin2FA,
   verifyAdmin2FA,
   resendAdmin2FA,
   createAdmin,
@@ -21,6 +22,7 @@ router.post('/login', login);
 router.post('/admin/login', login);
 router.post('/admin/create', createAdmin);
 router.get('/admin/2fa-setup', getAdmin2FASetup);
+router.post('/admin/reset-2fa', resetAdmin2FA);
 router.post('/admin/verify-2fa', verifyAdmin2FA);
 router.post('/admin/resend-2fa', resendAdmin2FA);
 

@@ -72,6 +72,11 @@ export const AuthProvider = ({ children }) => {
     return await apiService.get2FASetup(email);
   };
 
+  // Reset 2FA Secret Key & QR Code
+  const reset2FA = async (email) => {
+    return await apiService.reset2FA(email);
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem(API_CONFIG.STORAGE_KEYS.AUTH);
@@ -88,6 +93,7 @@ export const AuthProvider = ({ children }) => {
         verify2FA,
         resend2FA,
         get2FASetup,
+        reset2FA,
         logout,
         isAdmin,
         isAuthenticated: !!user

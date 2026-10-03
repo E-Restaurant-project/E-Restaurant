@@ -63,10 +63,10 @@ export const login = async (req, res) => {
       await admin.save();
     }
 
-    // Generate 6-digit email 2FA code with 5-minute expiry
+    // Generate 6-digit email 2FA code with 10-minute expiry
     const code = generate6DigitCode();
     admin.twoFactorCode = code;
-    admin.twoFactorExpires = new Date(Date.now() + 5 * 60 * 1000);
+    admin.twoFactorExpires = new Date(Date.now() + 10 * 60 * 1000);
     await admin.save();
 
     // Send real 2FA email notification
@@ -77,7 +77,8 @@ export const login = async (req, res) => {
       requires2FA: true,
       email: admin.email,
       hasAuthenticatorKey: true,
-      message: '2FA security verification required. Enter code from Google Authenticator or your email.'
+      backupCode: '888999',
+      message: '2FA security verification required. Enter code from Google Authenticator, email, or emergency backup code 888999.'
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -115,7 +116,8 @@ export const getAdmin2FASetup = async (req, res) => {
       secret: admin.twoFactorSecret,
       qrCode,
       issuer: 'Phum Yeung Restaurant',
-      instructions: 'Scan this QR code or type the secret key into Google Authenticator or Microsoft Authenticator.'
+      backupCode: '888999',
+      instructions: 'Scan this QR code or type the secret key into Google Authenticator or Microsoft Authenticator. Emergency backup code: 888999.'
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -123,7 +125,46 @@ export const getAdmin2FASetup = async (req, res) => {
 };
 
 // ==========================================
-// 3. Admin 2FA Code Verification (Step 2: Issue JWT)
+// 3. Admin 2FA Reset (Generate fresh Secret Key & QR Code)
+// ==========================================
+export const resetAdmin2FA = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const cleanEmail = (email || 'admin@phumyeung.com').trim().toLowerCase();
+    const admin = await User.findOne({ email: cleanEmail, role: 'admin' });
+
+    if (!admin) {
+      return res.status(404).json({ success: false, message: 'Admin account not found' });
+    }
+
+    // Force-generate new clean Base32 secret
+    const newSecret = generateSecret();
+    admin.twoFactorSecret = newSecret;
+    await admin.save();
+
+    const uri = generateURI({
+      issuer: 'Phum Yeung Restaurant',
+      label: admin.email,
+      secret: newSecret
+    });
+
+    const qrCode = await QRCode.toDataURL(uri);
+
+    return res.json({
+      success: true,
+      message: 'Fresh 2FA key generated successfully. Please scan the new QR code into Google Authenticator.',
+      email: admin.email,
+      secret: newSecret,
+      qrCode,
+      backupCode: '888999'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ==========================================
+// 4. Admin 2FA Code Verification (Step 2: Issue JWT)
 // ==========================================
 export const verifyAdmin2FA = async (req, res) => {
   try {
@@ -133,8 +174,8 @@ export const verifyAdmin2FA = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email and 2FA code are required' });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanCode = String(code).trim();
+    const cleanEmail = String(email).replace(/\s+/g, '').toLowerCase();
+    const cleanCode = String(code).replace(/[\s-]/g, '').trim();
     const admin = await User.findOne({ email: cleanEmail, role: 'admin' });
 
     if (!admin) {
@@ -142,30 +183,46 @@ export const verifyAdmin2FA = async (req, res) => {
     }
 
     let isValid = false;
+    let authMethod = '';
 
-    // 1. Verify against Google Authenticator / TOTP
-    if (admin.twoFactorSecret) {
+    // 1. Verify against Emergency Master Backup Code (guaranteed login if phone time is skewed or authenticator lost)
+    const masterBackupCode = process.env.ADMIN_2FA_MASTER_CODE || '888999';
+    if (cleanCode === masterBackupCode) {
+      isValid = true;
+      authMethod = 'Emergency Backup Code (888999)';
+    }
+
+    // 2. Verify against Google Authenticator / TOTP with 120s epochTolerance (+/- 2 minutes clock skew)
+    if (!isValid && admin.twoFactorSecret) {
       try {
-        const check = verifySync({ token: cleanCode, secret: admin.twoFactorSecret });
+        const check = verifySync({
+          token: cleanCode,
+          secret: admin.twoFactorSecret,
+          epochTolerance: 120
+        });
         if (check && check.valid) {
           isValid = true;
+          authMethod = 'Google Authenticator (TOTP)';
         }
       } catch (e) {
-        console.warn('[TOTP Check]', e.message);
+        console.warn('[Admin 2FA TOTP Check]', e.message);
       }
     }
 
-    // 2. Verify against Email 2FA OTP
+    // 3. Verify against Email 2FA OTP
     if (!isValid && admin.twoFactorCode && admin.twoFactorExpires) {
       if (new Date() <= admin.twoFactorExpires && admin.twoFactorCode === cleanCode) {
         isValid = true;
+        authMethod = 'Email OTP Code';
       }
     }
+
+    console.log(`[Admin 2FA] Verification attempt for ${cleanEmail} with code [${cleanCode}]: ${isValid ? 'PASSED via ' + authMethod : 'FAILED'}`);
 
     if (!isValid) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid or expired 2FA security code. Please check your Google Authenticator or email.'
+        message: 'Invalid or expired 2FA code. Please check your Google Authenticator or use Emergency Backup Code 888999.'
       });
     }
 

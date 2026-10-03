@@ -65,6 +65,8 @@ export const apiService = {
     request('/auth/admin/resend-2fa', { method: 'POST', body: JSON.stringify({ email }) }),
   get2FASetup: async (email) =>
     request(`/auth/admin/2fa-setup?email=${encodeURIComponent(email || '')}`),
+  reset2FA: async (email) =>
+    request('/auth/admin/reset-2fa', { method: 'POST', body: JSON.stringify({ email }) }),
   getMe: async () => request('/auth/me'),
 
   // Dishes Management

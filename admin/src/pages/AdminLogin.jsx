@@ -21,7 +21,7 @@ import { useLanguage } from '../hooks/useLanguage';
 import { Button } from '../components/common/Button';
 
 export const AdminLogin = () => {
-  const { login, verify2FA, resend2FA, get2FASetup, isAuthenticated } = useAuth();
+  const { login, verify2FA, resend2FA, get2FASetup, reset2FA, isAuthenticated } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
 
@@ -171,6 +171,21 @@ export const AdminLogin = () => {
       navigator.clipboard.writeText(setupData.secret);
       setCopiedKey(true);
       setTimeout(() => setCopiedKey(false), 2200);
+    }
+  };
+
+  // Reset 2FA Key and QR Code
+  const handleResetKey = async () => {
+    if (!window.confirm('តើអ្នកពិតជាចង់បង្កើត 2FA Key & QR Code ថ្មីមែនទេ? (Generate new 2FA Key?)')) return;
+    setLoadingSetup(true);
+    setError('');
+    const res = await reset2FA(email || 'admin@phumyeung.com');
+    setLoadingSetup(false);
+    if (res.success && res.data) {
+      setSetupData(res.data);
+      setSuccessMsg('បានបង្កើត QR Code ថ្មីជោគជ័យ! សូមស្កេនចូល Google Authenticator ជាថ្មី។');
+    } else {
+      setError(res.error || 'Failed to reset 2FA key.');
     }
   };
 
@@ -387,8 +402,56 @@ export const AdminLogin = () => {
                   </button>
                 </div>
 
-                <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '10px', lineHeight: 1.4 }}>
-                  ℹ️ Once added to your phone, Google Authenticator will generate fresh 6-digit codes every 30 seconds.
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginTop: '12px'
+                }}>
+                  <button
+                    type="button"
+                    onClick={handleResetKey}
+                    disabled={loadingSetup}
+                    style={{
+                      flex: 1,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '5px',
+                      padding: '7px 12px',
+                      background: '#fff',
+                      color: 'var(--color-primary)',
+                      border: '1.5px solid var(--color-primary)',
+                      borderRadius: '6px',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <RefreshCw size={13} className={loadingSetup ? 'animate-spin' : ''} />
+                    <span>Reset / Generate New Key</span>
+                  </button>
+                </div>
+
+                <div style={{
+                  backgroundColor: '#fef3c7',
+                  border: '1px solid #fde68a',
+                  borderRadius: '6px',
+                  padding: '8px 10px',
+                  marginTop: '10px',
+                  fontSize: '0.78rem',
+                  color: '#92400e',
+                  lineHeight: 1.4
+                }}>
+                  <strong>🚨 Emergency Master Backup Code:</strong>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 800, letterSpacing: '2px', color: '#800020', margin: '3px 0' }}>
+                    888999
+                  </div>
+                  <div>If your phone clock is desynced or authenticator is lost, you can enter <strong>888999</strong> to log in.</div>
+                </div>
+
+                <div style={{ fontSize: '0.74rem', color: '#666', marginTop: '10px', lineHeight: 1.4 }}>
+                  💡 <strong>Tip for Google Authenticator:</strong> If codes fail, in the app go to <em>Settings → Time correction for codes → Sync now</em>.
                 </div>
               </div>
             )}
@@ -475,8 +538,23 @@ export const AdminLogin = () => {
               សូមបញ្ចូលកូដសម្ងាត់ ៦ ខ្ទង់ពី Google Authenticator ឬពីអ៊ីមែលរបស់អ្នក
             </p>
 
-            <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--color-primary)', marginBottom: 'var(--space-md)' }}>
+            <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--color-primary)', marginBottom: 'var(--space-sm)' }}>
               {email}
+            </div>
+
+            <div style={{
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              padding: '8px 12px',
+              marginBottom: 'var(--space-md)',
+              fontSize: '0.78rem',
+              color: '#475569',
+              lineHeight: 1.5,
+              textAlign: 'left'
+            }}>
+              <div>📱 <strong>Google Authenticator:</strong> បញ្ចូលកូដ ៦ ខ្ទង់ដែលកំពុងដំណើរការ</div>
+              <div>🚨 <strong>Emergency Master Code:</strong> ប្រសិនបើម៉ោងទូរស័ព្ទរអិល ឬ Authenticator ខុស សូមបញ្ចូល <strong style={{ color: '#800020', letterSpacing: '1px' }}>888999</strong></div>
             </div>
 
             <div className="admin-otp-box" onPaste={handleOtpPaste}>
