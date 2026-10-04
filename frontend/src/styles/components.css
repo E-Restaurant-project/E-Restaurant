@@ -558,6 +558,87 @@
   align-items: center;
   justify-content: center;
   border: 2px solid #fff;
+  transition: transform var(--transition-fast);
+}
+
+/* Subtle Cart Micro-Interactions */
+.navbar__cart-btn--bouncing {
+  animation: cartPulseRing 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-color: var(--color-primary) !important;
+  color: var(--color-primary) !important;
+  background-color: var(--color-primary-subtle) !important;
+}
+
+.navbar__cart-btn--bouncing .navbar__cart-icon {
+  animation: cartIconBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.navbar__cart-btn--bouncing .navbar__cart-badge {
+  animation: cartBadgePop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes cartPulseRing {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(224, 86, 36, 0.45);
+  }
+  35% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 8px rgba(224, 86, 36, 0.15);
+  }
+  65% {
+    transform: scale(0.97);
+    box-shadow: 0 0 0 12px rgba(224, 86, 36, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(224, 86, 36, 0);
+  }
+}
+
+@keyframes cartIconBounce {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  20% {
+    transform: scale(1.2) rotate(-10deg);
+  }
+  45% {
+    transform: scale(0.94) rotate(8deg);
+  }
+  70% {
+    transform: scale(1.09) rotate(-4deg);
+  }
+  88% {
+    transform: scale(0.98) rotate(1deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes cartBadgePop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.45);
+  }
+  65% {
+    transform: scale(0.88);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Quick feedback on Add to Cart buttons */
+.btn--just-added {
+  background-color: #16a34a !important;
+  border-color: #16a34a !important;
+  color: #fff !important;
+  transform: scale(0.96);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .navbar__mobile-toggle {

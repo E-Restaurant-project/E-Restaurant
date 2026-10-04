@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Flame, Star } from 'lucide-react';
+import { Plus, Check, Flame, Star } from 'lucide-react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useCart } from '../../hooks/useCart';
 import { useToast } from '../../hooks/useToast';
@@ -12,6 +12,7 @@ export const DishCard = ({ dish }) => {
   const { language, t, formatCurrency } = useLanguage();
   const { addToCart } = useCart();
   const { showToast } = useToast();
+  const [justAdded, setJustAdded] = useState(false);
 
   const isKm = language === 'km';
   const name = isKm ? dish.name_km : dish.name_en;
@@ -21,6 +22,8 @@ export const DishCard = ({ dish }) => {
     e.preventDefault();
     e.stopPropagation();
     addToCart(dish, 1, dish.spice_level || 'mild');
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 700);
     showToast(
       isKm
         ? `បានដាក់ "${dish.name_km}" ចូលក្នុងកន្ត្រក!`
@@ -89,9 +92,10 @@ export const DishCard = ({ dish }) => {
             variant="primary"
             size="sm"
             onClick={handleQuickAdd}
-            icon={<Plus size={16} />}
+            className={justAdded ? 'btn--just-added' : ''}
+            icon={justAdded ? <Check size={16} /> : <Plus size={16} />}
           >
-            {t('menu.add_to_cart')}
+            {justAdded ? (isKm ? 'បានបញ្ចូល' : 'Added') : t('menu.add_to_cart')}
           </Button>
         </div>
       </div>

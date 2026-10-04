@@ -18,12 +18,21 @@ export const CartProvider = ({ children }) => {
 
   const [promoCode, setPromoCode] = useState('');
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [isCartBouncing, setIsCartBouncing] = useState(false);
+
+  const triggerCartBounce = () => {
+    setIsCartBouncing(true);
+    setTimeout(() => {
+      setIsCartBouncing(false);
+    }, 600);
+  };
 
   useEffect(() => {
     localStorage.setItem(API_CONFIG.STORAGE_KEYS.CART, JSON.stringify(items));
   }, [items]);
 
   const addToCart = (dish, quantity = 1, spiceLevel = 'mild', notes = '') => {
+    triggerCartBounce();
     setItems((prev) => {
       const existingIndex = prev.findIndex(
         (item) => item.dishId === dish.id && item.spiceLevel === spiceLevel && item.notes === notes
@@ -99,6 +108,8 @@ export const CartProvider = ({ children }) => {
       value={{
         items,
         itemCount,
+        isCartBouncing,
+        triggerCartBounce,
         subtotal,
         discount,
         discountPercent,

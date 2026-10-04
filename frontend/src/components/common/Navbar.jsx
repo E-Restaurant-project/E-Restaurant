@@ -9,7 +9,7 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 
 export const Navbar = () => {
   const { t, language } = useLanguage();
-  const { itemCount } = useCart();
+  const { itemCount, isCartBouncing } = useCart();
   const { storeSettings } = useRestaurant();
   const { isCustomerLoggedIn, customerUser } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -181,11 +181,11 @@ export const Navbar = () => {
 
             <Link
               to="/cart"
-              className="navbar__cart-btn"
+              className={`navbar__cart-btn ${isCartBouncing ? 'navbar__cart-btn--bouncing' : ''}`}
               aria-label="Shopping Cart"
               onClick={closeMobile}
             >
-              <ShoppingBag size={20} />
+              <ShoppingBag size={20} className="navbar__cart-icon" />
               {itemCount > 0 && (
                 <span className="navbar__cart-badge">{itemCount}</span>
               )}

@@ -33,6 +33,7 @@ export const ItemDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [spiceLevel, setSpiceLevel] = useState(dish?.spice_level || 'mild');
   const [specialNotes, setSpecialNotes] = useState('');
+  const [justAdded, setJustAdded] = useState(false);
 
   if (!dish) {
     return (
@@ -57,6 +58,8 @@ export const ItemDetail = () => {
 
   const handleAddToCart = () => {
     addToCart(dish, quantity, spiceLevel, specialNotes);
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 800);
     showToast(t('detail.added_success'), 'success');
   };
 
@@ -208,10 +211,14 @@ export const ItemDetail = () => {
                 variant="primary"
                 size="lg"
                 onClick={handleAddToCart}
-                icon={<ShoppingBag size={20} />}
+                className={justAdded ? 'btn--just-added' : ''}
+                icon={justAdded ? <CheckCircle2 size={20} /> : <ShoppingBag size={20} />}
                 style={{ flexGrow: 1 }}
               >
-                {t('menu.add_to_cart')} - {formatCurrency(dish.price * quantity)}
+                {justAdded
+                  ? (isKm ? 'បានបញ្ចូលក្នុងកន្ត្រក!' : 'Added to Cart!')
+                  : `${t('menu.add_to_cart')} - ${formatCurrency(dish.price * quantity)}`
+                }
               </Button>
             </div>
           </div>
