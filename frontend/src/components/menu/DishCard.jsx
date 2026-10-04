@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Plus, Check, Flame, Star } from 'lucide-react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useCart } from '../../hooks/useCart';
-import { useToast } from '../../hooks/useToast';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { getImageUrl } from '../../config/api';
@@ -11,7 +10,6 @@ import { getImageUrl } from '../../config/api';
 export const DishCard = ({ dish }) => {
   const { language, t, formatCurrency } = useLanguage();
   const { addToCart } = useCart();
-  const { showToast } = useToast();
   const [justAdded, setJustAdded] = useState(false);
 
   const isKm = language === 'km';
@@ -24,12 +22,6 @@ export const DishCard = ({ dish }) => {
     addToCart(dish, 1, dish.spice_level || 'mild');
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 700);
-    showToast(
-      isKm
-        ? `បានដាក់ "${dish.name_km}" ចូលក្នុងកន្ត្រក!`
-        : `Added "${dish.name_en}" to your cart!`,
-      'success'
-    );
   };
 
   const renderSpiceIndicator = () => {

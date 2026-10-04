@@ -12,7 +12,6 @@ import {
 import { useLanguage } from '../hooks/useLanguage';
 import { useRestaurant } from '../hooks/useRestaurant';
 import { useCart } from '../hooks/useCart';
-import { useToast } from '../hooks/useToast';
 import { DishCard } from '../components/menu/DishCard';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
@@ -25,7 +24,6 @@ export const ItemDetail = () => {
   const { language, t, formatCurrency, formatDualCurrency } = useLanguage();
   const { getDishById, dishes, allCategories } = useRestaurant();
   const { addToCart } = useCart();
-  const { showToast } = useToast();
 
   const isKm = language === 'km';
   const dish = getDishById(id);
@@ -60,7 +58,6 @@ export const ItemDetail = () => {
     addToCart(dish, quantity, spiceLevel, specialNotes);
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 800);
-    showToast(t('detail.added_success'), 'success');
   };
 
   // Find related dishes in same category
