@@ -27,13 +27,25 @@ export const Menu = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Synchronize category state if URL parameters change
+  useEffect(() => {
+    const cat = searchParams.get('category');
+    if (cat) {
+      setActiveCategory(cat);
+    }
+  }, [searchParams]);
+
   // Filter and sort dishes
   const filteredDishes = useMemo(() => {
     return dishes
       .filter((dish) => {
-        // Category filter
-        if (activeCategory !== 'all' && dish.category !== activeCategory) {
-          return false;
+        // Category filter (robust case-insensitive and trimmed comparison)
+        if (activeCategory !== 'all') {
+          const dishCat = String(dish.category || '').trim().toLowerCase();
+          const targetCat = String(activeCategory).trim().toLowerCase();
+          if (dishCat !== targetCat) {
+            return false;
+          }
         }
 
         // Spice filter

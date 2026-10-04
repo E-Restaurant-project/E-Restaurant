@@ -16,7 +16,7 @@ import { CustomSelect } from '../common/CustomSelect';
 import { apiService } from '../../services/api';
 import { getImageUrl } from '../../config/api';
 
-export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null }) => {
+export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null, initialCategory = '' }) => {
   const { t, language } = useLanguage();
   const { categories: restaurantCategories } = useRestaurant();
   const isKm = language === 'km';
@@ -25,13 +25,12 @@ export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null }) =>
       ? restaurantCategories
       : CATEGORIES.filter((c) => c.id !== 'all');
 
-  const defaultCat = categoryList[0]?.id || 'specials';
   const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
     name_km: '',
     name_en: '',
-    category: defaultCat,
+    category: initialCategory && initialCategory !== 'all' ? initialCategory : '',
     price: '',
     image: '',
     featured: false
@@ -49,17 +48,18 @@ export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null }) =>
       setFormData({
         name_km: dishToEdit.name_km || '',
         name_en: dishToEdit.name_en || '',
-        category: dishToEdit.category || defaultCat,
+        category: dishToEdit.category || '',
         price: dishToEdit.price || '',
         image: dishToEdit.image || '',
         featured: !!dishToEdit.featured
       });
       setPreviewUrl(dishToEdit.image || '');
     } else {
+      const startCat = initialCategory && initialCategory !== 'all' ? initialCategory : '';
       setFormData({
         name_km: '',
         name_en: '',
-        category: defaultCat,
+        category: startCat,
         price: '',
         image: '',
         featured: false
@@ -69,7 +69,7 @@ export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null }) =>
     setSelectedFile(null);
     setUploadError('');
     setErrors({});
-  }, [dishToEdit, isOpen, defaultCat]);
+  }, [dishToEdit, isOpen, initialCategory]);
 
   // Fast client-side image compression to speed up uploads by 10x
   const compressImage = async (file) => {
@@ -211,6 +211,9 @@ export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null }) =>
     if (!formData.name_en.trim()) {
       errs.name_en = isKm ? 'សូមបញ្ចូលឈ្មោះជាភាសាអង់គ្លេស' : 'Please enter English name';
     }
+    if (!formData.category || formData.category === 'all') {
+      errs.category = isKm ? 'សូមជ្រើសរើសប្រភេទមុខម្ហូប' : 'Please select a dish category';
+    }
     if (!formData.price || isNaN(formData.price) || Number(formData.price) <= 0) {
       errs.price = isKm ? 'សូមបញ្ចូលតម្លៃត្រឹមត្រូវ' : 'Please enter valid price';
     }
@@ -248,6 +251,7 @@ export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null }) =>
 
     await onSave({
       ...formData,
+      category: formData.category.trim(),
       spice_level: 'none',
       desc_km: '',
       desc_en: '',
@@ -307,8 +311,15 @@ export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null }) =>
               }))}
               value={formData.category}
               onChange={(val) => handleChange('category', val)}
-              placeholder={isKm ? 'ជ្រើសរើសប្រភេទ...' : 'Select category...'}
+              placeholder={isKm ? 'ជ្រើសរើសប្រភេទមុខម្ហូប...' : 'Select category...'}
+              error={!!errors.category}
             />
+            {errors.category && <span className="form-error">{errors.category}</span>}
+            {formData.category && (
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-primary)', display: 'block', marginTop: '4px', fontWeight: 600 }}>
+                ✓ {isKm ? 'មុខម្ហូបនឹងស្ថិតក្នុងប្រភេទ៖' : 'Category:'} {categoryList.find(c => c.id === formData.category)?.[isKm ? 'label_km' : 'label_en'] || formData.category}
+              </span>
+            )}
           </div>
 
           {/* Price */}

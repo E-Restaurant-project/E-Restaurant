@@ -66,8 +66,11 @@ export const AdminMenu = () => {
   const filteredDishes = React.useMemo(() => {
     return dishes
       .filter((dish) => {
-        if (!dish) return false;
-        if (selectedCategory !== 'all' && dish.category !== selectedCategory) return false;
+        if (selectedCategory !== 'all') {
+          const dishCat = String(dish.category || '').trim().toLowerCase();
+          const targetCat = String(selectedCategory).trim().toLowerCase();
+          if (dishCat !== targetCat) return false;
+        }
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase().trim();
           const matchKm = (dish.name_km || '').toLowerCase().includes(q);
@@ -119,11 +122,18 @@ export const AdminMenu = () => {
       await updateDish(editingDish.id, dishData);
       showToast(isKm ? 'បានកែសម្រួលមុខម្ហូបជោគជ័យ!' : 'Dish updated successfully!', 'success');
     } else {
-      // Auto-reset filters so the admin immediately sees the newly created dish at top
-      setSelectedCategory('all');
+      // Automatically switch filter to the newly created dish's category so the admin sees it right away
+      if (dishData.category && dishData.category !== 'all') {
+        setSelectedCategory(dishData.category);
+      }
       setSearchQuery('');
       await addDish(dishData);
-      showToast(isKm ? 'បានបន្ថែមមុខម្ហូបថ្មីជោគជ័យ!' : 'Dish added successfully!', 'success');
+      const catObj = categoryOptions.find(c => c.id === dishData.category);
+      const catName = isKm ? catObj?.label_km || dishData.category : catObj?.label_en || dishData.category;
+      showToast(
+        isKm ? `បានបន្ថែមមុខម្ហូបថ្មីជោគជ័យក្នុងប្រភេទ "${catName}"!` : `Dish added successfully under "${catName}"!`,
+        'success'
+      );
     }
   };
 
@@ -275,6 +285,7 @@ export const AdminMenu = () => {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveDish}
         dishToEdit={editingDish}
+        initialCategory={selectedCategory !== 'all' ? selectedCategory : ''}
       />
 
       {/* Modern Delete Confirmation Modal */}

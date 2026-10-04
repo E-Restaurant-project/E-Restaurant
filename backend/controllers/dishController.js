@@ -1,9 +1,17 @@
 import { Dish } from '../models/Dish.js';
 import { StoredImage } from '../models/StoredImage.js';
+import mongoose from 'mongoose';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+
+const getDishQuery = (id) => {
+  if (id && mongoose.Types.ObjectId.isValid(id)) {
+    return { $or: [{ _id: id }, { dishId: id }] };
+  }
+  return { dishId: id };
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -142,9 +150,7 @@ export const getDishes = async (req, res) => {
 // @route   GET /api/dishes/:id
 export const getDishById = async (req, res) => {
   try {
-    const dish = await Dish.findOne({
-      $or: [{ _id: req.params.id.match(/^[0-9a-fA-F]{24}$/) ? req.params.id : null }, { dishId: req.params.id }]
-    });
+    const dish = await Dish.findOne(getDishQuery(req.params.id));
 
     if (!dish) {
       return res.status(404).json({ success: false, message: 'Dish not found' });
@@ -161,6 +167,7 @@ export const createDish = async (req, res) => {
   try {
     const dishData = {
       ...req.body,
+      category: req.body.category ? String(req.body.category).trim() : 'specials',
       name_en: req.body.name_en || req.body.name_km || '',
       dishId: req.body.dishId || `dish-${Date.now()}`
     };
@@ -175,9 +182,13 @@ export const createDish = async (req, res) => {
 // @route   PUT /api/dishes/:id
 export const updateDish = async (req, res) => {
   try {
+    const updateData = { ...req.body };
+    if (updateData.category) {
+      updateData.category = String(updateData.category).trim();
+    }
     const dish = await Dish.findOneAndUpdate(
-      { $or: [{ _id: req.params.id.match(/^[0-9a-fA-F]{24}$/) ? req.params.id : null }, { dishId: req.params.id }] },
-      req.body,
+      getDishQuery(req.params.id),
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -194,9 +205,7 @@ export const updateDish = async (req, res) => {
 // @route   DELETE /api/dishes/:id
 export const deleteDish = async (req, res) => {
   try {
-    const dish = await Dish.findOneAndDelete({
-      $or: [{ _id: req.params.id.match(/^[0-9a-fA-F]{24}$/) ? req.params.id : null }, { dishId: req.params.id }]
-    });
+    const dish = await Dish.findOneAndDelete(getDishQuery(req.params.id));
 
     if (!dish) {
       return res.status(404).json({ success: false, message: 'Dish not found' });

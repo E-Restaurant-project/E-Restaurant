@@ -74,15 +74,17 @@ export const RestaurantProvider = ({ children }) => {
   // 5. Food Categories State
   const [categories, setCategories] = useState(() => {
     try {
-      const saved = localStorage.getItem('phum_yeung_categories_v2');
+      const initial = CATEGORIES.filter(c => c.id !== 'all');
+      const saved = localStorage.getItem('phum_yeung_categories_v3');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0 && !parsed.some(c => c.id === 'khmer_classics')) {
-          return parsed;
+        if (Array.isArray(parsed) && parsed.length >= initial.length && !parsed.some(c => c.id === 'khmer_classics')) {
+          const existingIds = new Set(parsed.map(c => c.id));
+          const missing = initial.filter(c => !existingIds.has(c.id));
+          return [...parsed, ...missing];
         }
       }
-      const initial = CATEGORIES.filter(c => c.id !== 'all');
-      localStorage.setItem('phum_yeung_categories_v2', JSON.stringify(initial));
+      localStorage.setItem('phum_yeung_categories_v3', JSON.stringify(initial));
       return initial;
     } catch {
       return CATEGORIES.filter(c => c.id !== 'all');
@@ -90,7 +92,7 @@ export const RestaurantProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    localStorage.setItem('phum_yeung_categories_v2', JSON.stringify(categories));
+    localStorage.setItem('phum_yeung_categories_v3', JSON.stringify(categories));
   }, [categories]);
 
   // Fetch from Node.js API on mount if available
