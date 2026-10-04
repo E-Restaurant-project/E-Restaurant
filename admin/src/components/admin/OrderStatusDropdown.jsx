@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Clock,
   ChefHat,
@@ -78,11 +79,37 @@ export const OrderStatusDropdown = ({
   const { language } = useLanguage();
   const isKm = language === 'km';
   const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0, openUp: false });
   const triggerRef = useRef(null);
   const dropdownRef = useRef(null);
 
   const currentConfig = ORDER_STATUS_CONFIG[status] || ORDER_STATUS_CONFIG.pending;
   const CurrentIcon = currentConfig.icon;
+
+  // Compute fixed position relative to viewport so it floats above all table overflow boundaries
+  const updatePosition = () => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const dropdownHeight = 250; // approximate menu height
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUp = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+
+    const top = openUp ? rect.top - dropdownHeight - 6 : rect.bottom + 6;
+    // Keep within horizontal bounds of screen
+    const left = Math.max(12, Math.min(rect.left, window.innerWidth - 215));
+
+    setCoords({ top, left, openUp });
+  };
+
+  const handleToggle = () => {
+    if (disabled) return;
+    if (!isOpen) {
+      updatePosition();
+      setIsOpen(true);
+    } else {
+      setIsOpen(false);
+    }
+  };
 
   // Close on outside click
   useEffect(() => {
@@ -98,10 +125,15 @@ export const OrderStatusDropdown = ({
     };
 
     if (isOpen) {
+      updatePosition();
       document.addEventListener('mousedown', handleOutsideClick);
+      window.addEventListener('resize', updatePosition);
+      window.addEventListener('scroll', updatePosition, true);
     }
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
     };
   }, [isOpen]);
 
@@ -137,7 +169,7 @@ export const OrderStatusDropdown = ({
         type="button"
         ref={triggerRef}
         disabled={disabled}
-        onClick={() => !disabled && setIsOpen((prev) => !prev)}
+        onClick={handleToggle}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -214,103 +246,105 @@ export const OrderStatusDropdown = ({
         />
       </button>
 
-      {/* Floating Animated Dropdown Menu */}
-      {isOpen && (
-        <div
-          ref={dropdownRef}
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 6px)',
-            left: 0,
-            zIndex: 1050,
-            minWidth: '185px',
-            backgroundColor: '#ffffff',
-            borderRadius: '16px',
-            padding: '6px',
-            boxShadow: '0 15px 35px -5px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.08)',
-            animation: 'dropdownPop 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards'
-          }}
-          role="listbox"
-        >
+      {/* Floating Glassmorphic Dropdown Menu Portaled to document.body to prevent table clipping */}
+      {isOpen &&
+        createPortal(
           <div
+            ref={dropdownRef}
             style={{
-              padding: '6px 10px',
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-              color: 'var(--color-text-muted)',
-              borderBottom: '1px solid #f1f5f9',
-              marginBottom: '4px'
+              position: 'fixed',
+              top: `${coords.top}px`,
+              left: `${coords.left}px`,
+              zIndex: 99999,
+              minWidth: '195px',
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              padding: '6px',
+              boxShadow: '0 20px 45px -8px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.1)',
+              animation: 'dropdownPop 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards'
             }}
+            role="listbox"
           >
-            {isKm ? 'ជ្រើសរើសស្ថានភាពថ្មី' : 'Update Order Status'}
-          </div>
+            <div
+              style={{
+                padding: '6px 10px',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                color: 'var(--color-text-muted)',
+                borderBottom: '1px solid #f1f5f9',
+                marginBottom: '4px'
+              }}
+            >
+              {isKm ? 'ជ្រើសរើសស្ថានភាពថ្មី' : 'Update Order Status'}
+            </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-            {statusList.map((cfg) => {
-              const isSelected = cfg.id === status;
-              const Icon = cfg.icon;
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+              {statusList.map((cfg) => {
+                const isSelected = cfg.id === status;
+                const Icon = cfg.icon;
 
-              return (
-                <button
-                  key={cfg.id}
-                  type="button"
-                  onClick={() => handleSelect(cfg.id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: '10px',
-                    border: 'none',
-                    backgroundColor: isSelected ? cfg.bg : 'transparent',
-                    color: isSelected ? cfg.color : '#334155',
-                    fontSize: '0.84rem',
-                    fontWeight: isSelected ? 700 : 500,
-                    cursor: 'pointer',
-                    transition: 'all 0.12s ease',
-                    textAlign: 'left'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = '#f8fafc';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-                    <span
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '24px',
-                        height: '24px',
-                        borderRadius: '6px',
-                        backgroundColor: cfg.bg,
-                        color: cfg.color
-                      }}
-                    >
-                      <Icon size={14} strokeWidth={2.2} />
-                    </span>
-                    <span>{isKm ? cfg.label_km : cfg.label_en}</span>
-                  </div>
+                return (
+                  <button
+                    key={cfg.id}
+                    type="button"
+                    onClick={() => handleSelect(cfg.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      backgroundColor: isSelected ? cfg.bg : 'transparent',
+                      color: isSelected ? cfg.color : '#334155',
+                      fontSize: '0.84rem',
+                      fontWeight: isSelected ? 700 : 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.12s ease',
+                      textAlign: 'left'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = '#f8fafc';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                      <span
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '6px',
+                          backgroundColor: cfg.bg,
+                          color: cfg.color
+                        }}
+                      >
+                        <Icon size={14} strokeWidth={2.2} />
+                      </span>
+                      <span>{isKm ? cfg.label_km : cfg.label_en}</span>
+                    </div>
 
-                  {isSelected && (
-                    <Check size={14} color={cfg.color} strokeWidth={2.8} />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+                    {isSelected && (
+                      <Check size={14} color={cfg.color} strokeWidth={2.8} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
