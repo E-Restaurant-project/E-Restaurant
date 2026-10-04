@@ -102,12 +102,16 @@ export const RestaurantProvider = ({ children }) => {
       if (isMounted && dishesRes.success && Array.isArray(dishesRes.data) && dishesRes.data.length > 0) {
         setDishes((prevDishes) => {
           const backendDishes = dishesRes.data.map(d => ({ ...d, id: d.dishId || d._id }));
-          const backendIds = new Set(backendDishes.map(d => d.id || d.dishId));
-          // Preserve any locally added dishes that haven't appeared in backend yet
+          const backendIds = new Set(backendDishes.map(d => String(d.id || d.dishId || d._id)));
           const localOnly = prevDishes.filter(
-            d => !backendIds.has(d.id) && !backendIds.has(d.dishId) && String(d.id).startsWith('dish-')
+            d => !backendIds.has(String(d.id || d.dishId || d._id)) && String(d.id).startsWith('dish-')
           );
-          return [...localOnly, ...backendDishes];
+          const combined = [...localOnly, ...backendDishes];
+          return combined.sort((a, b) => {
+            const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const tB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return tB - tA;
+          });
         });
       }
 
@@ -163,18 +167,28 @@ export const RestaurantProvider = ({ children }) => {
       price: Number(dishData.price),
       rating: 5.0,
       reviews_count: 0,
-      inStock: true
+      inStock: true,
+      createdAt: new Date().toISOString()
     };
     // Optimistically prepend to state so it renders immediately at the top
-    setDishes((prev) => [newDish, ...prev]);
+    setDishes((prev) => [newDish, ...prev.filter(d => d.id !== generatedId)]);
 
     // Send to Node.js backend
     try {
       const res = await apiService.createDish(newDish);
-      if (res && res.success) {
-        // Automatically sync fresh authoritative list from MongoDB so all dishes are visible
-        await refreshData();
-        return res.data || newDish;
+      if (res && res.success && res.data) {
+        const savedDish = {
+          ...res.data,
+          id: res.data.dishId || res.data._id || generatedId,
+          dishId: res.data.dishId || generatedId,
+          createdAt: res.data.createdAt || newDish.createdAt
+        };
+        // Replace optimistic placeholder with real confirmed dish from database
+        setDishes((prev) => [
+          savedDish,
+          ...prev.filter(d => d.id !== generatedId && d.dishId !== generatedId && d.id !== savedDish.id && d.dishId !== savedDish.dishId)
+        ]);
+        return savedDish;
       }
     } catch (err) {
       console.warn('[RestaurantContext] addDish API error, dish preserved locally:', err);
@@ -221,9 +235,17 @@ export const RestaurantProvider = ({ children }) => {
       const dishesRes = await apiService.getDishes();
       if (dishesRes && dishesRes.success && Array.isArray(dishesRes.data) && dishesRes.data.length > 0) {
         const backendDishes = dishesRes.data.map(d => ({ ...d, id: d.dishId || d._id }));
-        setDishes(backendDishes);
-        localStorage.setItem(API_CONFIG.STORAGE_KEYS.MENU, JSON.stringify(backendDishes));
-        return { success: true, count: backendDishes.length };
+        setDishes((prev) => {
+          const backendIds = new Set(backendDishes.map(d => String(d.id || d.dishId || d._id)));
+          const localPending = prev.filter(d => !backendIds.has(String(d.id || d.dishId || d._id)));
+          const merged = [...localPending, ...backendDishes];
+          return merged.sort((a, b) => {
+            const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const tB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return tB - tA;
+          });
+        });
+        return { success: true, count: dishesRes.data.length };
       }
     } catch (e) {
       console.warn('refreshData error:', e);
