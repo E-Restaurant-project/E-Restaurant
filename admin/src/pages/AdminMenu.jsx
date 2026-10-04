@@ -108,9 +108,10 @@ export const AdminMenu = () => {
     setIsDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (dishToDelete) {
-      deleteDish(dishToDelete.id);
+      const targetId = dishToDelete.dishId || dishToDelete.id || dishToDelete._id;
+      await deleteDish(targetId);
       showToast(isKm ? 'បានលុបមុខម្ហូបជោគជ័យ!' : 'Dish deleted successfully!', 'info');
       setIsDeleteModalOpen(false);
       setDishToDelete(null);

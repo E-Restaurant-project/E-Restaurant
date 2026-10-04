@@ -27,6 +27,8 @@ const INITIAL_PROMOS = [
 export const RestaurantProvider = ({ children }) => {
   const [dishes, setDishes] = useState(() => {
     try {
+      // Clear legacy storage key to purge any previously deleted ghost dishes
+      localStorage.removeItem('phum_yeung_menu');
       const saved = localStorage.getItem(API_CONFIG.STORAGE_KEYS.MENU);
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -34,7 +36,6 @@ export const RestaurantProvider = ({ children }) => {
           return parsed;
         }
       }
-      localStorage.setItem(API_CONFIG.STORAGE_KEYS.MENU, JSON.stringify(INITIAL_MENU));
       return INITIAL_MENU;
     } catch {
       return INITIAL_MENU;
@@ -99,17 +100,14 @@ export const RestaurantProvider = ({ children }) => {
   useEffect(() => {
     let isMounted = true;
     const fetchBackendData = async () => {
-      // Dishes
+      // Dishes: backend database is the single source of truth
       const dishesRes = await apiService.getDishes();
       if (isMounted && dishesRes.success && Array.isArray(dishesRes.data) && dishesRes.data.length > 0) {
-        setDishes((prevDishes) => {
-          const backendDishes = dishesRes.data.map(d => ({ ...d, id: d.dishId || d._id }));
-          const backendIds = new Set(backendDishes.map(d => d.id || d.dishId));
-          const localOnly = prevDishes.filter(
-            d => !backendIds.has(d.id) && !backendIds.has(d.dishId) && String(d.id).startsWith('dish-')
-          );
-          return [...localOnly, ...backendDishes];
-        });
+        const backendDishes = dishesRes.data.map(d => ({ ...d, id: d.dishId || d._id }));
+        setDishes(backendDishes);
+        try {
+          localStorage.setItem(API_CONFIG.STORAGE_KEYS.MENU, JSON.stringify(backendDishes));
+        } catch (_) {}
       }
 
       // Orders

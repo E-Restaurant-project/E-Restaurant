@@ -11,7 +11,7 @@ export const API_CONFIG = {
     CART: 'phum_yeung_cart',
     AUTH: 'phum_yeung_auth',
     CUSTOMER_AUTH: 'phum_yeung_customer_auth',
-    MENU: 'phum_yeung_menu',
+    MENU: 'phum_yeung_menu_v3',
     ORDERS: 'phum_yeung_orders',
     RESERVATIONS: 'phum_yeung_reservations'
   }

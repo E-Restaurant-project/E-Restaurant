@@ -8,7 +8,7 @@ export const API_CONFIG = {
   STORAGE_KEYS: {
     LANGUAGE: 'phum_yeung_admin_lang',
     AUTH: 'phum_yeung_admin_auth',
-    MENU: 'phum_yeung_menu',
+    MENU: 'phum_yeung_menu_v3',
     ORDERS: 'phum_yeung_orders',
     RESERVATIONS: 'phum_yeung_reservations'
   }
