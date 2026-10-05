@@ -47,24 +47,10 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     setLoading(true);
 
-    // 1. Attempt server JWT login
+    // Attempt server JWT login
     const apiRes = await apiService.login(email, password);
     if (apiRes.success && apiRes.data?.token) {
       setUser(apiRes.data);
-      setLoading(false);
-      return { success: true };
-    }
-
-    // 2. Offline / local fallback
-    if (email.trim().toLowerCase() === 'admin@phumyeung.com' && password === 'admin123') {
-      const authData = {
-        id: 'admin-001',
-        name: 'Phum Yeung Admin',
-        email: 'admin@phumyeung.com',
-        role: 'admin',
-        token: 'phum_yeung_jwt_token_' + Date.now()
-      };
-      setUser(authData);
       setLoading(false);
       return { success: true };
     }

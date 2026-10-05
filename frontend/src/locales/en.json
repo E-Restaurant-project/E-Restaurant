@@ -222,7 +222,6 @@
     "email": "Email Address",
     "password": "Password",
     "login_btn": "Sign In to Admin",
-    "demo_hint": "Demo credentials: admin@phumyeung.com / Password: admin123",
     "logout": "Sign Out",
     "nav_dashboard": "Dashboard & Stats",
     "nav_menu": "Menu Management",
