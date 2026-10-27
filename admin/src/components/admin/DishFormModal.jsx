@@ -32,6 +32,7 @@ export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null, init
     name_en: '',
     category: initialCategory && initialCategory !== 'all' ? initialCategory : '',
     price: '',
+    discount_percent: 0,
     image: '',
     featured: false
   });
@@ -45,11 +46,20 @@ export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null, init
 
   useEffect(() => {
     if (dishToEdit) {
+      let initPrice = '';
+      if (dishToEdit.price_khr !== undefined && dishToEdit.price_khr !== null) {
+        initPrice = String(dishToEdit.price_khr);
+      } else if (dishToEdit.price !== undefined && dishToEdit.price !== null) {
+        const p = Number(dishToEdit.price);
+        initPrice = p >= 100 ? String(Math.round(p)) : String(Math.round(p * 4100));
+      }
+
       setFormData({
         name_km: dishToEdit.name_km || '',
         name_en: dishToEdit.name_en || '',
         category: dishToEdit.category || '',
-        price: dishToEdit.price || '',
+        price: initPrice,
+        discount_percent: dishToEdit.discount_percent || 0,
         image: dishToEdit.image || '',
         featured: !!dishToEdit.featured
       });
@@ -61,6 +71,7 @@ export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null, init
         name_en: '',
         category: startCat,
         price: '',
+        discount_percent: 0,
         image: '',
         featured: false
       });
@@ -214,8 +225,8 @@ export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null, init
     if (!formData.category || formData.category === 'all') {
       errs.category = isKm ? 'សូមជ្រើសរើសប្រភេទមុខម្ហូប' : 'Please select a dish category';
     }
-    if (!formData.price || isNaN(formData.price) || Number(formData.price) <= 0) {
-      errs.price = isKm ? 'សូមបញ្ចូលតម្លៃត្រឹមត្រូវ' : 'Please enter valid price';
+    if (!formData.price || isNaN(formData.price) || Number(formData.price) < 100) {
+      errs.price = isKm ? 'តម្លៃអប្បបរមាគឺ 100៛' : 'Minimum price is 100៛';
     }
     if (!previewUrl && !formData.image) {
       errs.image = isKm
@@ -249,6 +260,9 @@ export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null, init
       }
     }
 
+    const khrPrice = Math.max(100, Math.round(Number(formData.price)));
+    const usdPrice = parseFloat((khrPrice / 4100).toFixed(4));
+
     await onSave({
       ...formData,
       category: formData.category.trim(),
@@ -256,7 +270,9 @@ export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null, init
       desc_km: '',
       desc_en: '',
       image: finalImageUrl,
-      price: Number(formData.price)
+      price: usdPrice,
+      price_khr: khrPrice,
+      discount_percent: Math.min(90, Math.max(0, Math.round(Number(formData.discount_percent) || 0)))
     });
     onClose();
   };
@@ -322,20 +338,139 @@ export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null, init
             )}
           </div>
 
-          {/* Price */}
+          {/* Price (In Khmer Riel - ៛) */}
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label form-label--required">{t('admin.dish_price')}</label>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input
+                type="number"
+                step="100"
+                min="100"
+                className={`form-input ${errors.price ? 'form-input--error' : ''}`}
+                value={formData.price}
+                onChange={(e) => handleChange('price', e.target.value)}
+                placeholder="10000"
+                style={{
+                  paddingRight: '48px',
+                  fontWeight: 600,
+                  fontSize: '1rem'
+                }}
+              />
+              <span
+                style={{
+                  position: 'absolute',
+                  right: '14px',
+                  fontWeight: 800,
+                  fontSize: '1.1rem',
+                  color: 'var(--color-primary)',
+                  pointerEvents: 'none'
+                }}
+              >
+                ៛
+              </span>
+            </div>
+            {errors.price ? (
+              <span className="form-error">{errors.price}</span>
+            ) : formData.price && !isNaN(formData.price) && Number(formData.price) >= 100 ? (
+              <span
+                style={{
+                  fontSize: '0.78rem',
+                  color: '#16a34a',
+                  display: 'block',
+                  marginTop: '4px',
+                  fontWeight: 600
+                }}
+              >
+                ✓ {Number(formData.price).toLocaleString()} ៛ ≈ ${(Number(formData.price) / 4100).toFixed(2)} USD
+              </span>
+            ) : (
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  color: 'var(--color-text-muted)',
+                  display: 'block',
+                  marginTop: '4px'
+                }}
+              >
+                {isKm ? 'បញ្ចូលជាប្រាក់រៀល (អប្បបរមា 100៛)' : 'Enter price in Riel (min 100៛)'}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Product-Specific Discount Field */}
+        <div className="form-group" style={{ marginBottom: 'var(--space-md)', padding: '12px 14px', backgroundColor: 'rgba(239, 68, 68, 0.04)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <label className="form-label" style={{ marginBottom: 0, fontWeight: 700, color: '#dc2626', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>🏷️ {isKm ? 'បញ្ចុះតម្លៃសម្រាប់មុខម្ហូបនេះ (Discount %)' : 'Product Discount (% OFF)'}</span>
+            </label>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: formData.discount_percent > 0 ? '#dc2626' : '#64748b' }}>
+              {formData.discount_percent > 0 ? `-${formData.discount_percent}% OFF` : (isKm ? 'គ្មានការបញ្ចុះតម្លៃ (0%)' : 'No Discount (0%)')}
+            </span>
+          </div>
+
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <input
               type="number"
-              step="0.25"
-              min="0.5"
-              className={`form-input ${errors.price ? 'form-input--error' : ''}`}
-              value={formData.price}
-              onChange={(e) => handleChange('price', e.target.value)}
-              placeholder="6.50"
+              min="0"
+              max="90"
+              step="5"
+              className="form-input"
+              value={formData.discount_percent === 0 ? '' : formData.discount_percent}
+              onChange={(e) => {
+                const val = e.target.value === '' ? 0 : Math.min(90, Math.max(0, Number(e.target.value)));
+                handleChange('discount_percent', val);
+              }}
+              placeholder={isKm ? 'បញ្ចូលភាគរយចុះថ្លៃ (ឧ. 20 ស្មើនឹង 20% OFF)' : 'Enter discount % (e.g. 20 for 20% OFF)'}
+              style={{ paddingRight: '42px', fontWeight: 600 }}
             />
-            {errors.price && <span className="form-error">{errors.price}</span>}
+            <span style={{ position: 'absolute', right: '14px', fontWeight: 800, fontSize: '1.05rem', color: '#dc2626', pointerEvents: 'none' }}>
+              %
+            </span>
           </div>
+
+          {/* Quick preset discount pills */}
+          <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>
+              {isKm ? 'ជ្រើសរើសរហ័ស៖' : 'Quick select:'}
+            </span>
+            {[0, 10, 15, 20, 30, 50].map((pct) => (
+              <button
+                type="button"
+                key={pct}
+                onClick={() => handleChange('discount_percent', pct)}
+                style={{
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  border: '1px solid',
+                  borderColor: Number(formData.discount_percent) === pct ? '#dc2626' : '#e2e8f0',
+                  backgroundColor: Number(formData.discount_percent) === pct ? '#dc2626' : '#ffffff',
+                  color: Number(formData.discount_percent) === pct ? '#ffffff' : '#475569',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {pct === 0 ? (isKm ? 'ធម្មតា' : 'None') : `-${pct}%`}
+              </button>
+            ))}
+          </div>
+
+          {/* Live Discounted Price Preview */}
+          {formData.discount_percent > 0 && formData.price && !isNaN(formData.price) && (
+            <div style={{ marginTop: '8px', padding: '6px 10px', backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #fecaca', fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: '#475569' }}>
+                {isKm ? 'តម្លៃក្រោយបញ្ចុះរួច៖' : 'Discounted Price:'}
+              </span>
+              <span style={{ fontWeight: 800, color: '#dc2626' }}>
+                {Math.round(Number(formData.price) * (1 - formData.discount_percent / 100)).toLocaleString()} ៛{' '}
+                <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontWeight: 500, fontSize: '0.75rem' }}>
+                  ({Number(formData.price).toLocaleString()} ៛)
+                </span>
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Professional Image Upload Box */}

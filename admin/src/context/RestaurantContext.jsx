@@ -11,6 +11,7 @@ const DEFAULT_SETTINGS = {
   standardDeliveryFee: 1.50,
   freeDeliveryThreshold: 25.00,
   khrRate: 4100,
+  categoryDiscounts: {},
   announcement: {
     active: true,
     text_km: '🔥 ប្រូម៉ូសិនពិសេស៖ បញ្ចុះតម្លៃ ១០% សម្រាប់ការកុម្ម៉ង់ដំបូងដោយប្រើកូដ PHUM10!',
@@ -41,15 +42,24 @@ export const RestaurantProvider = ({ children }) => {
     }
   });
 
-  // 2. Orders State
+  // 2. Orders State (Pure Database Data)
   const [orders, setOrders] = useState(() => {
     try {
       const saved = localStorage.getItem(API_CONFIG.STORAGE_KEYS.ORDERS);
-      return saved ? JSON.parse(saved) : INITIAL_ORDERS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && !parsed.some(o => o.id === 'PY-ORD-1001' || o.customerName?.includes('Chan Sopheap'))) {
+          return parsed;
+        }
+      }
+      return [];
     } catch {
-      return INITIAL_ORDERS;
+      return [];
     }
   });
+
+  // Real Database Customers State
+  const [dbCustomers, setDbCustomers] = useState([]);
 
   // 3. Store Settings
   const [storeSettings, setStoreSettings] = useState(() => {
@@ -114,10 +124,20 @@ export const RestaurantProvider = ({ children }) => {
         } catch (_) {}
       }
 
-      // Orders
+      // Real Customers from Database
+      const custRes = await apiService.getCustomers();
+      if (isMounted && custRes.success && Array.isArray(custRes.data)) {
+        setDbCustomers(custRes.data);
+      }
+
+      // Real Orders from Database
       const ordersRes = await apiService.getOrders();
-      if (isMounted && ordersRes.success && Array.isArray(ordersRes.data) && ordersRes.data.length > 0) {
-        setOrders(ordersRes.data.map(o => ({ ...o, id: o.orderId || o._id })));
+      if (isMounted && ordersRes.success && Array.isArray(ordersRes.data)) {
+        const backendOrders = ordersRes.data.map(o => ({ ...o, id: o.orderId || o._id }));
+        setOrders(backendOrders);
+        try {
+          localStorage.setItem(API_CONFIG.STORAGE_KEYS.ORDERS, JSON.stringify(backendOrders));
+        } catch (_) {}
       }
 
       // Settings
@@ -139,10 +159,19 @@ export const RestaurantProvider = ({ children }) => {
     };
   }, []);
 
+  // Real-time broadcast channel to sync live between Admin and Customer Frontend tabs
+  const syncChannel = useMemo(() => {
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      return new BroadcastChannel('phum_yeung_deals_sync');
+    }
+    return null;
+  }, []);
+
   // Sync to localStorage
   useEffect(() => {
     localStorage.setItem(API_CONFIG.STORAGE_KEYS.MENU, JSON.stringify(dishes));
-  }, [dishes]);
+    syncChannel?.postMessage({ type: 'DISHES_UPDATED', dishes });
+  }, [dishes, syncChannel]);
 
   useEffect(() => {
     localStorage.setItem(API_CONFIG.STORAGE_KEYS.ORDERS, JSON.stringify(orders));
@@ -150,7 +179,8 @@ export const RestaurantProvider = ({ children }) => {
 
   useEffect(() => {
     localStorage.setItem('phum_yeung_settings', JSON.stringify(storeSettings));
-  }, [storeSettings]);
+    syncChannel?.postMessage({ type: 'SETTINGS_UPDATED', storeSettings });
+  }, [storeSettings, syncChannel]);
 
   useEffect(() => {
     localStorage.setItem('phum_yeung_promos', JSON.stringify(promoCodes));
@@ -159,11 +189,20 @@ export const RestaurantProvider = ({ children }) => {
   // Dish Operations (State + API)
   const addDish = async (dishData) => {
     const generatedId = `dish-${Date.now()}`;
+    const khrVal = dishData.price_khr !== undefined
+      ? Number(dishData.price_khr)
+      : (Number(dishData.price) >= 100 ? Number(dishData.price) : Math.round(Number(dishData.price) * 4100));
+    const usdVal = Number(dishData.price) >= 100
+      ? parseFloat((khrVal / 4100).toFixed(4))
+      : Number(dishData.price);
+
     const newDish = {
       ...dishData,
       id: generatedId,
       dishId: generatedId,
-      price: Number(dishData.price),
+      price: usdVal,
+      price_khr: khrVal,
+      discount_percent: Number(dishData.discount_percent) || 0,
       rating: 5.0,
       reviews_count: 0,
       inStock: true,
@@ -180,6 +219,8 @@ export const RestaurantProvider = ({ children }) => {
           ...res.data,
           id: res.data.dishId || res.data._id || generatedId,
           dishId: res.data.dishId || generatedId,
+          price: res.data.price !== undefined ? Number(res.data.price) : newDish.price,
+          price_khr: res.data.price_khr !== undefined ? Number(res.data.price_khr) : newDish.price_khr,
           createdAt: res.data.createdAt || newDish.createdAt
         };
         // Replace optimistic placeholder with real confirmed dish from database
@@ -197,15 +238,39 @@ export const RestaurantProvider = ({ children }) => {
 
   const updateDish = async (id, updatedFields) => {
     setDishes((prev) =>
-      prev.map((dish) =>
-        dish.id === id || dish.dishId === id
-          ? { ...dish, ...updatedFields, price: Number(updatedFields.price !== undefined ? updatedFields.price : dish.price) }
-          : dish
-      )
+      prev.map((dish) => {
+        if (dish.id !== id && dish.dishId !== id) return dish;
+        let khrVal = updatedFields.price_khr;
+        let usdVal = updatedFields.price;
+        if (khrVal !== undefined && usdVal === undefined) {
+          usdVal = parseFloat((Number(khrVal) / 4100).toFixed(4));
+        } else if (usdVal !== undefined && khrVal === undefined) {
+          const numP = Number(usdVal);
+          if (numP >= 100) {
+            khrVal = Math.round(numP);
+            usdVal = parseFloat((khrVal / 4100).toFixed(4));
+          } else {
+            khrVal = Math.max(100, Math.round(numP * 4100));
+          }
+        }
+        return {
+          ...dish,
+          ...updatedFields,
+          price: usdVal !== undefined ? Number(usdVal) : dish.price,
+          price_khr: khrVal !== undefined ? Number(khrVal) : (dish.price_khr || Math.round(Number(dish.price) * 4100)),
+          discount_percent: updatedFields.discount_percent !== undefined
+            ? Number(updatedFields.discount_percent)
+            : (dish.discount_percent || 0)
+        };
+      })
     );
     try {
-      await apiService.updateDish(id, updatedFields);
-      await refreshData();
+      const res = await apiService.updateDish(id, updatedFields);
+      if (res && res.success && res.data) {
+        setDishes((prev) =>
+          prev.map((d) => (d.id === id || d.dishId === id ? { ...d, ...res.data } : d))
+        );
+      }
     } catch (err) {
       console.warn('[RestaurantContext] updateDish error:', err);
     }
@@ -290,6 +355,30 @@ export const RestaurantProvider = ({ children }) => {
     setStoreSettings((prev) => ({ ...prev, ...newSettings }));
     // Call Node.js API
     apiService.updateSettings(newSettings);
+  };
+
+  // Discount Operations (Category-level & Product-level)
+  const updateCategoryDiscount = async (categoryId, discountPercent) => {
+    const currentDiscounts = { ...(storeSettings.categoryDiscounts || {}) };
+    const num = Number(discountPercent) || 0;
+    const catKey = String(categoryId).trim().toLowerCase();
+    if (num <= 0) {
+      delete currentDiscounts[catKey];
+      delete currentDiscounts[categoryId];
+    } else {
+      currentDiscounts[catKey] = Math.min(100, Math.max(1, Math.round(num)));
+    }
+    const updatedSettings = {
+      ...storeSettings,
+      categoryDiscounts: currentDiscounts
+    };
+    await updateStoreSettings(updatedSettings);
+    return updatedSettings;
+  };
+
+  const updateDishDiscount = async (dishId, discountPercent) => {
+    const num = Math.min(90, Math.max(0, Math.round(Number(discountPercent) || 0)));
+    await updateDish(dishId, { discount_percent: num });
   };
 
   // Promo Operations
@@ -390,11 +479,15 @@ export const RestaurantProvider = ({ children }) => {
     );
   };
 
-  // Customers aggregation
+  // Real Customers from Database
   const customers = useMemo(() => {
+    if (dbCustomers && dbCustomers.length > 0) {
+      return dbCustomers;
+    }
     const map = new Map();
     orders.forEach((order) => {
-      const key = (order.phone || order.customerName).trim().toLowerCase();
+      const key = (order.email || (order.phone ? `phone_${order.phone}` : order.customerName) || '').trim().toLowerCase();
+      if (!key) return;
       if (!map.has(key)) {
         map.set(key, {
           id: `cust-${map.size + 1}`,
@@ -418,7 +511,7 @@ export const RestaurantProvider = ({ children }) => {
       }
     });
     return Array.from(map.values());
-  }, [orders]);
+  }, [dbCustomers, orders]);
 
   // Export CSV helper
   const exportOrdersToCSV = () => {
@@ -470,6 +563,8 @@ export const RestaurantProvider = ({ children }) => {
         exportOrdersToCSV,
         storeSettings,
         updateStoreSettings,
+        updateCategoryDiscount,
+        updateDishDiscount,
         promoCodes,
         addPromoCode,
         updatePromoCode,

@@ -11,6 +11,8 @@ const dishSchema = new mongoose.Schema(
       trim: true
     },
     price: { type: Number, required: true, min: 0 },
+    price_khr: { type: Number, min: 100 },
+    discount_percent: { type: Number, default: 0, min: 0, max: 100 },
     spice_level: {
       type: String,
       enum: ['none', 'mild', 'medium', 'hot'],

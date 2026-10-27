@@ -2807,3 +2807,55 @@ export const CATEGORIES = [
     "label_en": "Phum Yeung Soups"
   }
 ];
+
+export const NON_SPICY_CATEGORY_IDS = ['snacks-bari', 'beverages', 'beer-wine'];
+
+export const isNonSpicyCategory = (categoryOrDish, catObj = null) => {
+  if (!categoryOrDish && !catObj) return false;
+
+  const cat = typeof categoryOrDish === 'object' && categoryOrDish !== null
+    ? categoryOrDish.category
+    : categoryOrDish;
+
+  const catId = String(cat || catObj?.id || '').toLowerCase().trim();
+  const nonSpicyIds = [
+    'snacks-bari',
+    'beverages',
+    'beer-wine',
+    'drinks',
+    'drink',
+    'beverage',
+    'beer',
+    'wine',
+    'cigarette',
+    'cigarettes',
+    'bari'
+  ];
+
+  if (nonSpicyIds.includes(catId)) return true;
+
+  const kmLabel = String(catObj?.label_km || (typeof categoryOrDish === 'object' ? categoryOrDish?.name_km : '') || '').replace(/\u200B/g, '');
+  const enLabel = String(catObj?.label_en || (typeof categoryOrDish === 'object' ? categoryOrDish?.name_en : '') || '').toLowerCase();
+
+  if (
+    kmLabel.includes('បារី') ||
+    kmLabel.includes('ភេសជ្ជៈ') ||
+    kmLabel.includes('ស្រាបៀរ') ||
+    kmLabel.includes('ស្រាក្រហម')
+  ) {
+    return true;
+  }
+
+  if (
+    enLabel.includes('cigarette') ||
+    enLabel.includes('beverage') ||
+    enLabel.includes('drink') ||
+    enLabel.includes('beer') ||
+    enLabel.includes('wine') ||
+    enLabel.includes('bari')
+  ) {
+    return true;
+  }
+
+  return false;
+};

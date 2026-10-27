@@ -15,14 +15,15 @@ import { useCart } from '../hooks/useCart';
 import { DishCard } from '../components/menu/DishCard';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
-import { CATEGORIES } from '../data/menu';
+import { CATEGORIES, isNonSpicyCategory } from '../data/menu';
 import { getImageUrl } from '../config/api';
+import { getEffectiveDiscount, getDiscountedPrice, getDiscountedPriceKHR } from '../utils/discount';
 
 export const ItemDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { language, t, formatCurrency, formatDualCurrency } = useLanguage();
-  const { getDishById, dishes, allCategories } = useRestaurant();
+  const { getDishById, dishes, allCategories, storeSettings } = useRestaurant();
   const { addToCart } = useCart();
 
   const isKm = language === 'km';
@@ -49,13 +50,17 @@ export const ItemDetail = () => {
   const desc = isKm ? dish.desc_km : dish.desc_en;
   const ingredients = isKm ? dish.ingredients_km : dish.ingredients_en;
   const dualPrice = formatDualCurrency(dish.price);
+  const effectiveDiscount = getEffectiveDiscount(dish, storeSettings?.categoryDiscounts);
+  const discountedPrice = getDiscountedPrice(dish, storeSettings?.categoryDiscounts);
+  const dualDiscountedPrice = formatDualCurrency(discountedPrice);
 
   const categoryList = allCategories && allCategories.length > 0 ? allCategories : CATEGORIES;
   const catObj = categoryList.find((c) => c.id === dish.category);
   const categoryLabel = catObj ? (isKm ? catObj.label_km : catObj.label_en) : dish.category;
+  const showSpiceLevel = !isNonSpicyCategory(dish, catObj) && dish?.spice_level !== 'none';
 
   const handleAddToCart = () => {
-    addToCart(dish, quantity, spiceLevel, specialNotes);
+    addToCart(dish, quantity, showSpiceLevel ? spiceLevel : null, specialNotes);
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 800);
   };
@@ -122,9 +127,38 @@ export const ItemDetail = () => {
               </div>
             </div>
 
-            <div className="detail-info__price">
-              <span className="detail-info__price-usd">{dualPrice.usd}</span>
-              <span className="detail-info__price-khr">({dualPrice.khr})</span>
+            <div className="detail-info__price" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              {effectiveDiscount > 0 ? (
+                <>
+                  <span className="detail-info__price-usd" style={{ color: '#dc2626', fontWeight: 800 }}>
+                    {dualDiscountedPrice.usd}
+                  </span>
+                  <span className="detail-info__price-khr" style={{ color: '#dc2626', fontWeight: 700 }}>
+                    ({dualDiscountedPrice.khr})
+                  </span>
+                  <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '1.1rem' }}>
+                    {dualPrice.usd}
+                  </span>
+                  <span
+                    style={{
+                      backgroundColor: '#dc2626',
+                      color: '#ffffff',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      padding: '3px 9px',
+                      borderRadius: '9999px',
+                      letterSpacing: '0.5px'
+                    }}
+                  >
+                    🔥 -{effectiveDiscount}% OFF
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="detail-info__price-usd">{dualPrice.usd}</span>
+                  <span className="detail-info__price-khr">({dualPrice.khr})</span>
+                </>
+              )}
             </div>
 
             <p className="detail-info__desc">{desc}</p>
@@ -148,24 +182,26 @@ export const ItemDetail = () => {
             {/* Customization Options */}
             <div className="card" style={{ padding: 'var(--space-md)', marginBottom: 'var(--space-lg)' }}>
               {/* Spice Level */}
-              <div className="form-group" style={{ marginBottom: 'var(--space-md)' }}>
-                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Flame size={16} color="var(--color-danger)" />
-                  <span>{t('detail.spice_level')}</span>
-                </label>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {['none', 'mild', 'medium', 'hot'].map((lvl) => (
-                    <button
-                      key={lvl}
-                      type="button"
-                      className={`btn btn--sm ${spiceLevel === lvl ? 'btn--primary' : 'btn--outline'}`}
-                      onClick={() => setSpiceLevel(lvl)}
-                    >
-                      {t(`menu.spice_${lvl}`)}
-                    </button>
-                  ))}
+              {showSpiceLevel && (
+                <div className="form-group" style={{ marginBottom: 'var(--space-md)' }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Flame size={16} color="var(--color-danger)" />
+                    <span>{t('detail.spice_level')}</span>
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {['none', 'mild', 'medium', 'hot'].map((lvl) => (
+                      <button
+                        key={lvl}
+                        type="button"
+                        className={`btn btn--sm ${spiceLevel === lvl ? 'btn--primary' : 'btn--outline'}`}
+                        onClick={() => setSpiceLevel(lvl)}
+                      >
+                        {t(`menu.spice_${lvl}`)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Special Instructions */}
               <div className="form-group" style={{ marginBottom: 0 }}>
@@ -214,7 +250,7 @@ export const ItemDetail = () => {
               >
                 {justAdded
                   ? (isKm ? 'បានបញ្ចូលក្នុងកន្ត្រក!' : 'Added to Cart!')
-                  : `${t('menu.add_to_cart')} - ${formatCurrency(dish.price * quantity)}`
+                  : `${t('menu.add_to_cart')} - ${formatCurrency((effectiveDiscount > 0 ? discountedPrice : dish.price) * quantity)}`
                 }
               </Button>
             </div>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Mail, Lock, User, Phone, MapPin, ArrowLeft, KeyRound, CheckCircle, AlertCircle, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -6,7 +6,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { Button } from '../components/common/Button';
 
 export const Auth = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isKm = language === 'km';
   const {
     isCustomerLoggedIn,
     customerLogin,
@@ -20,7 +21,23 @@ export const Auth = () => {
   const location = useLocation();
   const from = location.state?.from || '/account';
 
-  const [mode, setMode] = useState('login'); // 'login' | 'register' | 'verify'
+  const [mode, setMode] = useState(() => {
+    try {
+      const params = new URLSearchParams(window?.location?.search || '');
+      if (params.get('mode') === 'register') return 'register';
+    } catch (_) {}
+    return 'login';
+  });
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(location.search);
+      const m = params.get('mode');
+      if (m === 'register' || m === 'login' || m === 'verify') {
+        setMode(m);
+      }
+    } catch (_) {}
+  }, [location.search]);
   const [slideDirection, setSlideDirection] = useState('forward'); // 'forward' | 'backward'
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [showLoginPassword, setShowLoginPassword] = useState(false);
@@ -270,35 +287,39 @@ export const Auth = () => {
           {/* Dev Mode Simulation Hint */}
           {devCode && mode === 'verify' && (
             <div style={{
-              backgroundColor: 'var(--color-secondary-subtle)',
-              border: '1px dashed var(--color-secondary)',
+              backgroundColor: '#fffbeb',
+              border: '1px solid #fde68a',
               borderRadius: 'var(--radius-md)',
-              padding: 'var(--space-sm) var(--space-md)',
+              padding: '10px 14px',
               marginBottom: 'var(--space-md)',
-              fontSize: '0.88rem',
-              color: 'var(--color-secondary-dark)',
+              fontSize: '0.82rem',
+              color: '#92400e',
               textAlign: 'center'
             }}>
-              <strong>{t('auth.dev_hint')}</strong>{' '}
-              <span style={{ fontSize: '1.1rem', letterSpacing: '2px', fontWeight: 800, color: 'var(--color-primary)' }}>
-                {devCode}
-              </span>
-              <button
-                type="button"
-                style={{
-                  display: 'block',
-                  margin: '4px auto 0',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--color-primary)',
-                  fontSize: '0.8rem',
-                  textDecoration: 'underline',
-                  cursor: 'pointer'
-                }}
-                onClick={() => setOtp(String(devCode).split(''))}
-              >
-                Auto-fill Code
-              </button>
+              <div>⚠️ <strong>{isKm ? 'ការផ្ញើសំបុត្រពិតប្រាកដ (Real Gmail)៖' : 'Real Gmail Delivery:'}</strong></div>
+              <div style={{ fontSize: '0.76rem', color: '#b45309', marginTop: '2px' }}>
+                {isKm
+                  ? 'សូមកំណត់ EMAIL_USER និង EMAIL_PASS ក្នុង backend/.env ដើម្បីផ្ញើចូល Inbox ផ្ទាល់។'
+                  : 'Set EMAIL_USER & EMAIL_PASS in backend/.env to deliver straight to Gmail.'}
+              </div>
+              <div style={{ marginTop: '4px', fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-primary)' }}>
+                Dev Code: {devCode}
+                <button
+                  type="button"
+                  style={{
+                    marginLeft: '8px',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--color-primary)',
+                    fontSize: '0.76rem',
+                    textDecoration: 'underline',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => setOtp(String(devCode).split(''))}
+                >
+                  ({isKm ? 'បំពេញស្វ័យប្រវត្តិ' : 'Auto-fill'})
+                </button>
+              </div>
             </div>
           )}
 
@@ -509,8 +530,27 @@ export const Auth = () => {
             <div key="verify" className={`auth-form-viewport ${slideDirection === 'forward' ? 'auth-slide-forward' : 'auth-slide-backward'}`}>
               <form onSubmit={handleVerifySubmit}>
                 <div style={{ textAlign: 'center', margin: 'var(--space-sm) 0 var(--space-md)' }}>
-                  <KeyRound size={40} style={{ color: 'var(--color-primary)', margin: '0 auto var(--space-xs)' }} />
-                  <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>{t('auth.enter_otp')}</p>
+                  <div style={{
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--color-primary-subtle)',
+                    color: 'var(--color-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 10px'
+                  }}>
+                    <Mail size={24} />
+                  </div>
+                  <h3 style={{ fontSize: '1.15rem', color: 'var(--color-text-main)', marginBottom: '4px', fontWeight: 700 }}>
+                    {isKm ? 'ពិនិត្យមើលសារក្នុង Gmail របស់អ្នក' : 'Check your Gmail Inbox'}
+                  </h3>
+                  <p style={{ fontSize: '0.84rem', color: 'var(--color-text-muted)', maxWidth: '340px', margin: '0 auto', lineHeight: 1.5 }}>
+                    {isKm
+                      ? `យើងបានផ្ញើកូដសម្ងាត់ ៦ ខ្ទង់ទៅកាន់ ${verifyEmail}។ សូមពិនិត្យមើលប្រអប់សំបុត្រ (Inbox ឬ Spam)។`
+                      : `We sent a 6-digit verification code to ${verifyEmail}. Please check your Inbox or Spam folder.`}
+                  </p>
                 </div>
 
                 <div className="auth-otp-box" onPaste={handleOtpPaste}>

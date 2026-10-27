@@ -3,6 +3,7 @@ import { Trash2, Plus, Minus } from 'lucide-react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useCart } from '../../hooks/useCart';
 import { getImageUrl } from '../../config/api';
+import { isNonSpicyCategory } from '../../data/menu';
 
 export const CartItem = ({ item }) => {
   const { language, formatCurrency, t } = useLanguage();
@@ -19,9 +20,32 @@ export const CartItem = ({ item }) => {
       <div className="cart-item__info">
         <h4>{name}</h4>
         <div className="cart-item__meta">
-          <span>{formatCurrency(item.price)}</span>
-          {item.spiceLevel && (
-            <span> • {t('detail.spice_level')}: {item.spiceLevel}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 700, color: item.discountPercent > 0 ? '#dc2626' : 'inherit' }}>
+              {formatCurrency(item.price)}
+            </span>
+            {item.discountPercent > 0 && item.originalPrice && (
+              <>
+                <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.78rem' }}>
+                  {formatCurrency(item.originalPrice)}
+                </span>
+                <span
+                  style={{
+                    backgroundColor: '#fee2e2',
+                    color: '#dc2626',
+                    fontSize: '0.68rem',
+                    fontWeight: 800,
+                    padding: '1px 5px',
+                    borderRadius: '4px'
+                  }}
+                >
+                  -{item.discountPercent}%
+                </span>
+              </>
+            )}
+          </div>
+          {item.spiceLevel && item.spiceLevel !== 'none' && !isNonSpicyCategory(item) && (
+            <span> • {t('detail.spice_level')}: {t(`menu.spice_${item.spiceLevel}`) || item.spiceLevel}</span>
           )}
           {item.notes && (
             <div><em>"{item.notes}"</em></div>

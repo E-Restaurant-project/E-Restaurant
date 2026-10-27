@@ -92,6 +92,9 @@ export const apiService = {
     }
   },
 
+  // Customers Management (Real DB Customers)
+  getCustomers: async () => request('/auth/customers'),
+
   // Orders Management
   getOrders: async () => request('/orders'),
   getOrder: async (orderId) => request(`/orders/${orderId}`),

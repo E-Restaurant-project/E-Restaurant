@@ -1,6 +1,14 @@
 // Centralized API configuration for Phum Yeung Admin Portal
+const resolveApiBase = () => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return 'http://localhost:5000/api';
+  }
+  return 'https://phum-yeung-backend.onrender.com/api';
+};
+
 export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_URL || 'https://phum-yeung-backend.onrender.com/api',
+  BASE_URL: resolveApiBase(),
   CURRENCY_RATE: {
     KHR_PER_USD: 4100
   },

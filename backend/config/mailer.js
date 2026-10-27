@@ -8,80 +8,158 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 dotenv.config();
 
-export const sendVerificationEmail = async (toEmail, code, name = 'Valued Customer') => {
-  const emailUser = process.env.EMAIL_USER;
-  const emailPass = process.env.EMAIL_PASS;
+/**
+ * Creates and returns an authenticated Nodemailer transporter for Gmail
+ */
+const getTransporter = () => {
+  const emailUser = process.env.EMAIL_USER?.trim();
+  const emailPass = process.env.EMAIL_PASS?.trim()?.replace(/\s+/g, ''); // strip spaces from App Password
 
-  // Always log OTP to server terminal for instant local testing
-  console.log(`\n======================================================`);
-  console.log(`📧 [Email Verification OTP]`);
-  console.log(`👤 Recipient: ${name} <${toEmail}>`);
-  console.log(`🔑 6-Digit Verification Code: [ ${code} ]`);
-  console.log(`⏱️ Expires in: 10 minutes`);
-  console.log(`======================================================\n`);
-
-  // If real Gmail credentials are provided in .env, send real email
-  if (emailUser && emailPass) {
-    try {
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: emailUser,
-          pass: emailPass
-        }
-      });
-
-      const htmlContent = `
-        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 540px; margin: 0 auto; padding: 24px; border: 1px solid #e0dbd3; border-radius: 12px; background-color: #fdfbf7;">
-          <div style="text-align: center; margin-bottom: 20px;">
-            <span style="font-size: 40px;">🍲</span>
-            <h2 style="color: #800020; margin: 8px 0 2px;">ភោជនីយដ្ឋាន ភូមិយើង | Phum Yeung Restaurant</h2>
-            <p style="color: #c59b27; font-weight: 600; margin: 0; font-size: 14px;">Authentic Khmer Cuisine & Fast Delivery</p>
-          </div>
-
-          <p style="color: #333; font-size: 16px;">សួស្តី <strong>${name}</strong>,</p>
-          <p style="color: #555; font-size: 15px; line-height: 1.6;">
-            សូមអរគុណសម្រាប់ការចុះឈ្មោះគណនីជាមួយ ភោជនីយដ្ឋាន ភូមិយើង! សូមប្រើប្រាស់កូដផ្ទៀងផ្ទាត់ OTP ៦ ខ្ទង់ខាងក្រោមនេះដើម្បីបញ្ជាក់គណនី Gmail របស់អ្នក៖
-          </p>
-
-          <div style="text-align: center; margin: 28px 0;">
-            <div style="display: inline-block; padding: 14px 32px; background-color: #800020; color: #ffffff; font-size: 32px; font-weight: 800; letter-spacing: 6px; border-radius: 8px; box-shadow: 0 4px 12px rgba(128,0,32,0.25);">
-              ${code}
-            </div>
-            <div style="color: #888; font-size: 13px; margin-top: 8px;">(កូដនេះមានសុពលភាពរយៈពេល ១០ នាទី)</div>
-          </div>
-
-          <p style="color: #777; font-size: 13px; border-top: 1px solid #eee; padding-top: 16px;">
-            ប្រសិនបើលោកអ្នកមិនបានស្នើសុំចុះឈ្មោះគណនីនេះទេ សូមអើពើចំពោះសារអ៊ីមែលនេះ។<br/>
-            រក្សាសិទ្ធិគ្រប់យ៉ាងដោយ ភោជនីយដ្ឋាន ភូមិយើង (Phum Yeung Restaurant).
-          </p>
-        </div>
-      `;
-
-      await transporter.sendMail({
-        from: `"Phum Yeung Restaurant" <${emailUser}>`,
-        to: toEmail,
-        subject: `[${code}] កូដផ្ទៀងផ្ទាត់គណនី | Phum Yeung Verification Code`,
-        html: htmlContent
-      });
-
-      console.log(`[Email Service] Real email dispatched to ${toEmail}`);
-      return { success: true, code };
-    } catch (error) {
-      console.warn(`[Email Service Warning] Could not send live email: ${error.message}`);
-      console.warn(`[Email Service Note] The code [${code}] was still generated and can be verified.`);
-      return { success: true, code, simulated: true };
-    }
+  if (!emailUser || !emailPass) {
+    return null;
   }
 
-  return { success: true, code, simulated: true };
+  return nodemailer.createTransport({
+    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user: emailUser,
+      pass: emailPass
+    },
+    tls: {
+      rejectUnauthorized: false
+    }
+  });
 };
 
-export const sendAdmin2FAEmail = async (toEmail, code, name = 'Administrator') => {
-  const emailUser = process.env.EMAIL_USER;
-  const emailPass = process.env.EMAIL_PASS;
+/**
+ * Sends a REAL 6-digit OTP verification code to customer's Gmail
+ */
+export const sendVerificationEmail = async (toEmail, code, name = 'Valued Customer') => {
+  const emailUser = process.env.EMAIL_USER?.trim();
+  const emailPass = process.env.EMAIL_PASS?.trim()?.replace(/\s+/g, '');
 
-  // Always log 2FA code to server terminal for security auditing and local testing
+  console.log(`\n======================================================`);
+  console.log(`📧 [Real Gmail OTP Dispatch System]`);
+  console.log(`👤 Recipient: ${name} <${toEmail}>`);
+  console.log(`🔑 Verification Code: [ ${code} ]`);
+  console.log(`⏱️ Expiry: 10 minutes`);
+  console.log(`======================================================\n`);
+
+  if (!emailUser || !emailPass) {
+    console.warn(`⚠️ [Email Service Warning] EMAIL_USER or EMAIL_PASS not configured in backend/.env.`);
+    console.warn(`👉 To send real emails directly to ${toEmail}, please add your Gmail and App Password in backend/.env:`);
+    console.warn(`   EMAIL_USER=your_email@gmail.com`);
+    console.warn(`   EMAIL_PASS=your_16_char_app_password\n`);
+    return {
+      success: false,
+      realEmailSent: false,
+      code,
+      error: 'Gmail SMTP credentials (EMAIL_USER / EMAIL_PASS) not set in backend/.env'
+    };
+  }
+
+  try {
+    const transporter = getTransporter();
+    if (!transporter) {
+      throw new Error('Could not initialize Gmail SMTP transporter');
+    }
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>កូដផ្ទៀងផ្ទាត់គណនី - ភោជនីយដ្ឋាន ភូមិយើង</title>
+      </head>
+      <body style="margin: 0; padding: 20px; background-color: #f6f3ee; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <div style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e8e2d8;">
+          <!-- Top Header Banner -->
+          <div style="background: linear-gradient(135deg, #800020 0%, #a31c38 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
+            <div style="font-size: 42px; line-height: 1; margin-bottom: 8px;">🍲</div>
+            <h1 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 0.5px; color: #ffffff;">
+              ភោជនីយដ្ឋាន ភូមិយើង
+            </h1>
+            <div style="font-size: 13px; color: #fdf8e6; font-weight: 600; margin-top: 4px; letter-spacing: 0.5px;">
+              Phum Yeung Restaurant • Authentic Khmer Cuisine
+            </div>
+          </div>
+
+          <!-- Body Content -->
+          <div style="padding: 32px 28px;">
+            <p style="font-size: 16px; color: #231f1e; margin: 0 0 16px; font-weight: 600;">
+              សួស្តី <strong>${name}</strong>,
+            </p>
+            <p style="font-size: 14.5px; line-height: 1.6; color: #55514f; margin: 0 0 24px;">
+              សូមអរគុណសម្រាប់ការចុះឈ្មោះគណនីជាមួយ <strong>ភោជនីយដ្ឋាន ភូមិយើង</strong>។ សូមប្រើប្រាស់លេខកូដសម្ងាត់ OTP ៦ ខ្ទង់ខាងក្រោមនេះ ដើម្បីផ្ទៀងផ្ទាត់គណនី Gmail របស់អ្នក៖
+            </p>
+
+            <!-- OTP Box -->
+            <div style="background: #fdfbf7; border: 2px dashed #800020; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
+              <div style="font-size: 12px; color: #800020; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">
+                លេខកូដផ្ទៀងផ្ទាត់ / Verification Code
+              </div>
+              <div style="font-size: 36px; font-weight: 900; color: #800020; letter-spacing: 8px; font-family: monospace;">
+                ${code}
+              </div>
+              <div style="font-size: 12px; color: #8b8380; margin-top: 8px;">
+                ⏱️ មានសុពលភាពរយៈពេល <strong>១០ នាទី</strong> ប៉ុណ្ណោះ
+              </div>
+            </div>
+
+            <p style="font-size: 13px; line-height: 1.6; color: #736c69; margin: 24px 0 0; padding-top: 20px; border-top: 1px solid #f0eae1;">
+              ⚠️ <strong>ចំណាំសុវត្ថិភាព៖</strong> សូមកុំចែករំលែកលេខកូដនេះទៅកាន់អ្នកដទៃឡើយ។ បុគ្គលិកភូមិយើងនឹងមិនសួររកលេខកូដសម្ងាត់របស់អ្នកជាដាច់ខាត។
+            </p>
+          </div>
+
+          <!-- Footer -->
+          <div style="background-color: #faf7f2; padding: 18px 24px; text-align: center; font-size: 12px; color: #9c948f; border-top: 1px solid #eee8de;">
+            ភោជនីយដ្ឋាន ភូមិយើង (Phum Yeung Restaurant)<br/>
+            រាជធានីភ្នំពេញ • ទូរស័ព្ទ៖ 012 345 678
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const textContent = `សួស្តី ${name},\n\nលេខកូដផ្ទៀងផ្ទាត់គណនីរបស់អ្នកគឺ៖ ${code}\n(កូដនេះមានសុពលភាពរយៈពេល ១០ នាទី)\n\nសូមអរគុណ,\nភោជនីយដ្ឋាន ភូមិយើង (Phum Yeung Restaurant)`;
+
+    const info = await transporter.sendMail({
+      from: `"ភោជនីយដ្ឋាន ភូមិយើង" <${emailUser}>`,
+      to: toEmail,
+      subject: `[${code}] កូដផ្ទៀងផ្ទាត់គណនី Gmail របស់អ្នក | Phum Yeung Restaurant`,
+      text: textContent,
+      html: htmlContent
+    });
+
+    console.log(`✅ [Real Email Sent] Message delivered to ${toEmail} | Message ID: ${info.messageId}`);
+    return {
+      success: true,
+      realEmailSent: true,
+      code,
+      messageId: info.messageId
+    };
+  } catch (error) {
+    console.error(`❌ [Real Email Dispatch Failed]: ${error.message}`);
+    return {
+      success: false,
+      realEmailSent: false,
+      code,
+      error: error.message
+    };
+  }
+};
+
+/**
+ * Sends Admin 2FA Security Email
+ */
+export const sendAdmin2FAEmail = async (toEmail, code, name = 'Administrator') => {
+  const emailUser = process.env.EMAIL_USER?.trim();
+  const emailPass = process.env.EMAIL_PASS?.trim()?.replace(/\s+/g, '');
+
   console.log(`\n======================================================`);
   console.log(`🔐 [ADMIN 2-FACTOR AUTHENTICATION (2FA)]`);
   console.log(`👤 Recipient: ${name} <${toEmail}>`);
@@ -89,62 +167,38 @@ export const sendAdmin2FAEmail = async (toEmail, code, name = 'Administrator') =
   console.log(`⏱️ Expires in: 5 minutes`);
   console.log(`======================================================\n`);
 
-  if (emailUser && emailPass) {
-    try {
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: emailUser,
-          pass: emailPass
-        }
-      });
-
-      const htmlContent = `
-        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 540px; margin: 0 auto; padding: 24px; border: 2px solid #800020; border-radius: 12px; background-color: #ffffff;">
-          <div style="text-align: center; margin-bottom: 20px;">
-            <div style="font-size: 42px;">🛡️</div>
-            <h2 style="color: #800020; margin: 8px 0 2px;">Phum Yeung Restaurant | Admin Portal</h2>
-            <p style="color: #666; font-weight: 600; margin: 0; font-size: 14px;">Two-Factor Authentication Security Check</p>
-          </div>
-
-          <p style="color: #333; font-size: 15px;">Hello <strong>${name}</strong>,</p>
-          <p style="color: #555; font-size: 14px; line-height: 1.6;">
-            A sign-in attempt was detected for your Administrator account. Please enter the following 6-digit security code to complete your two-factor authentication:
-          </p>
-
-          <div style="text-align: center; margin: 28px 0;">
-            <div style="display: inline-block; padding: 14px 32px; background-color: #800020; color: #ffffff; font-size: 34px; font-weight: 800; letter-spacing: 8px; border-radius: 8px; box-shadow: 0 4px 14px rgba(128,0,32,0.3);">
-              ${code}
-            </div>
-            <div style="color: #888; font-size: 13px; margin-top: 10px;">⏱️ This security code will expire in <strong>5 minutes</strong>.</div>
-          </div>
-
-          <p style="color: #b91c1c; font-size: 13px; background-color: #fef2f2; padding: 10px 14px; border-radius: 6px; border-left: 4px solid #b91c1c;">
-            ⚠️ If you did NOT attempt to sign in to the Admin Portal, someone may have your password. Please secure your account immediately.
-          </p>
-        </div>
-      `;
-
-      const recipients = [toEmail];
-      if (emailUser && toEmail !== emailUser) {
-        recipients.push(emailUser);
-      }
-
-      await transporter.sendMail({
-        from: `"Phum Yeung Security" <${emailUser}>`,
-        to: recipients.join(', '),
-        subject: `[${code}] Admin 2FA Security Code | Phum Yeung Restaurant`,
-        html: htmlContent
-      });
-
-      console.log(`[2FA Email Dispatched] Delivered to: ${recipients.join(', ')}`);
-      return { success: true, code };
-    } catch (error) {
-      console.warn(`[2FA Email Warning] Could not send live email: ${error.message}`);
-      return { success: true, code, simulated: true };
-    }
+  if (!emailUser || !emailPass) {
+    return { success: false, realEmailSent: false, code };
   }
 
-  return { success: true, code, simulated: true };
-};
+  try {
+    const transporter = getTransporter();
+    if (!transporter) throw new Error('No transporter');
 
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; border: 2px solid #800020; border-radius: 12px; background: #ffffff;">
+        <h2 style="color: #800020; margin-top: 0;">🛡️ Phum Yeung Admin 2FA Code</h2>
+        <p>Hello <strong>${name}</strong>,</p>
+        <p>Your Admin 2FA security code is:</p>
+        <div style="text-align: center; margin: 24px 0;">
+          <div style="display: inline-block; padding: 12px 28px; background: #800020; color: #fff; font-size: 32px; font-weight: 800; letter-spacing: 6px; border-radius: 8px;">
+            ${code}
+          </div>
+          <div style="color: #888; font-size: 12px; margin-top: 8px;">Valid for 5 minutes.</div>
+        </div>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: `"Phum Yeung Security" <${emailUser}>`,
+      to: toEmail,
+      subject: `[${code}] Admin 2FA Security Code | Phum Yeung Restaurant`,
+      html: htmlContent
+    });
+
+    return { success: true, realEmailSent: true, code };
+  } catch (error) {
+    console.error(`Admin 2FA Email Error: ${error.message}`);
+    return { success: false, realEmailSent: false, code, error: error.message };
+  }
+};
