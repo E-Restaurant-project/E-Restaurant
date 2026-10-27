@@ -47,7 +47,9 @@ export const DeleteConfirmModal = ({
   const displayDesc = description || defaultDesc;
   const mainName = dish ? (dish.name_km || dish.name_en) : itemTitle;
   const subName = dish ? (dish.name_en !== dish.name_km ? dish.name_en : null) : itemSubtitle;
-  const badgeText = dish ? formatCurrency(dish.price) : itemBadge;
+  const badgeText = dish
+    ? (dish.price_khr ? `${dish.price_khr.toLocaleString()} ៛` : formatCurrency(dish.price))
+    : itemBadge;
 
   return (
     <div className="delete-modal-overlay" onClick={isLoading ? undefined : onClose}>

@@ -16,7 +16,7 @@ export const MenuFilter = ({
   onSortChange
 }) => {
   const { language, t } = useLanguage();
-  const { allCategories } = useRestaurant();
+  const { allCategories, storeSettings } = useRestaurant();
   const isKm = language === 'km';
   const categoryList = allCategories && allCategories.length > 0 ? allCategories : CATEGORIES;
 
@@ -143,7 +143,30 @@ export const MenuFilter = ({
                 className={`menu-filter__cat-btn ${isActive ? 'menu-filter__cat-btn--active' : ''}`}
                 onClick={(e) => handleCategorySelect(cat.id, e)}
               >
-                {label}
+                <span>{label}</span>
+                {(() => {
+                  const catKey = String(cat.id).trim().toLowerCase();
+                  const catDisc = Number(storeSettings?.categoryDiscounts?.[catKey] || storeSettings?.categoryDiscounts?.[cat.id] || 0);
+                  if (catDisc > 0) {
+                    return (
+                      <span
+                        style={{
+                          marginLeft: '6px',
+                          backgroundColor: isActive ? '#ffffff' : '#dc2626',
+                          color: isActive ? '#dc2626' : '#ffffff',
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          padding: '1px 6px',
+                          borderRadius: '9999px',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        -{catDisc}%
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
               </button>
             );
           })}

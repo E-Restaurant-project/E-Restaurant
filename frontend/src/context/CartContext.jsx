@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { API_CONFIG } from '../config/api';
 import { useRestaurant } from './RestaurantContext';
+import { isNonSpicyCategory } from '../data/menu';
 
 const CartContext = createContext(null);
 
@@ -31,11 +32,16 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem(API_CONFIG.STORAGE_KEYS.CART, JSON.stringify(items));
   }, [items]);
 
-  const addToCart = (dish, quantity = 1, spiceLevel = 'mild', notes = '') => {
+  const addToCart = (dish, quantity = 1, spiceLevel = null, notes = '') => {
     triggerCartBounce();
+    const isNonSpicy = isNonSpicyCategory(dish) || dish?.spice_level === 'none';
+    const resolvedSpice = isNonSpicy || !spiceLevel || spiceLevel === 'none'
+      ? null
+      : spiceLevel;
+
     setItems((prev) => {
       const existingIndex = prev.findIndex(
-        (item) => item.dishId === dish.id && item.spiceLevel === spiceLevel && item.notes === notes
+        (item) => item.dishId === dish.id && item.spiceLevel === resolvedSpice && item.notes === notes
       );
 
       if (existingIndex > -1) {
@@ -47,12 +53,13 @@ export const CartProvider = ({ children }) => {
       const newItem = {
         cartItemId: `${dish.id}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
         dishId: dish.id,
+        category: dish.category,
         name_km: dish.name_km,
         name_en: dish.name_en,
         price: Number(dish.price),
         image: dish.image,
         quantity,
-        spiceLevel: spiceLevel || dish.spice_level || 'mild',
+        spiceLevel: resolvedSpice,
         notes: notes || ''
       };
       return [...prev, newItem];

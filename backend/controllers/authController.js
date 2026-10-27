@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import { generateSecret, generateURI, verifySync } from 'otplib';
 import QRCode from 'qrcode';
 import { User } from '../models/User.js';
+import { Order } from '../models/Order.js';
 import { sendVerificationEmail, sendAdmin2FAEmail } from '../config/mailer.js';
 
 const generateToken = (id) => {
@@ -364,10 +365,12 @@ export const registerCustomer = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Verification code sent to your email',
+      message: mailResult.realEmailSent
+        ? 'Verification code has been sent to your Gmail inbox'
+        : 'Verification code generated. (Configure EMAIL_USER & EMAIL_PASS in backend/.env to send real email)',
       email: cleanEmail,
-      // Provide OTP in response for instant developer testing
-      devCode: code
+      realEmailSent: mailResult.realEmailSent || false,
+      devCode: mailResult.realEmailSent ? undefined : code
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -467,12 +470,16 @@ export const resendCode = async (req, res) => {
     user.verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    await sendVerificationEmail(cleanEmail, code, user.name);
+    const mailResult = await sendVerificationEmail(cleanEmail, code, user.name);
 
     res.json({
       success: true,
-      message: 'New verification code has been sent',
-      devCode: code
+      message: mailResult.realEmailSent
+        ? 'New verification code has been sent to your Gmail inbox'
+        : 'New verification code has been generated',
+      email: cleanEmail,
+      realEmailSent: mailResult.realEmailSent || false,
+      devCode: mailResult.realEmailSent ? undefined : code
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -573,5 +580,97 @@ export const updateProfile = async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get all real customers from database
+// @route   GET /api/auth/customers
+export const getCustomers = async (req, res) => {
+  try {
+    const users = await User.find({ role: 'customer' }).sort({ createdAt: -1 }).lean();
+    const orders = await Order.find().sort({ createdAt: -1 }).lean();
+
+    const customerMap = new Map();
+
+    // 1. Process all registered customer accounts
+    for (const user of users) {
+      const emailKey = user.email ? user.email.toLowerCase().trim() : null;
+      const phoneKey = user.phone ? user.phone.trim() : null;
+      const key = emailKey || (phoneKey ? `phone_${phoneKey}` : String(user._id));
+
+      // Match orders strictly belonging to this registered user:
+      // - If order has an email, it MUST match this user's email
+      // - OR if order has customer_id, it MUST match user._id
+      // - Only if order has NO email at all (guest), match by phone
+      const userOrders = orders.filter((o) => {
+        const oEmail = o.email ? o.email.toLowerCase().trim() : null;
+        if (emailKey && oEmail) {
+          return oEmail === emailKey;
+        }
+        if (o.customer_id && String(o.customer_id) === String(user._id)) {
+          return true;
+        }
+        if (!oEmail && phoneKey && o.phone && o.phone.trim() === phoneKey) {
+          return true;
+        }
+        return false;
+      });
+
+      const totalSpent = userOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+      const lastOrder = userOrders.length > 0 ? userOrders[0].createdAt : user.createdAt;
+
+      customerMap.set(key, {
+        id: String(user._id),
+        name: user.name,
+        email: user.email,
+        phone: user.phone || 'N/A',
+        address: user.address || 'N/A',
+        isVerified: user.isVerified || false,
+        ordersCount: userOrders.length,
+        totalSpent: totalSpent,
+        lastOrderDate: lastOrder,
+        createdAt: user.createdAt,
+        orders: userOrders
+      });
+    }
+
+    // 2. Process guest orders (orders not linked to any registered account)
+    for (const order of orders) {
+      const emailKey = order.email ? order.email.toLowerCase().trim() : null;
+      const phoneKey = order.phone ? order.phone.trim() : null;
+      const key = emailKey || (phoneKey ? `guest_phone_${phoneKey}` : `guest_order_${order.orderId}`);
+
+      if (key && !customerMap.has(key)) {
+        const matchingOrders = orders.filter((o) => {
+          const oEmail = o.email ? o.email.toLowerCase().trim() : null;
+          if (emailKey && oEmail) {
+            return oEmail === emailKey;
+          }
+          if (!emailKey && phoneKey && o.phone) {
+            return o.phone.trim() === phoneKey;
+          }
+          return false;
+        });
+        const totalSpent = matchingOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+        customerMap.set(key, {
+          id: `order-cust-${customerMap.size + 1}`,
+          name: order.customerName || 'Guest Customer',
+          email: order.email || 'N/A',
+          phone: order.phone || 'N/A',
+          address: order.address || 'N/A',
+          isVerified: false,
+          ordersCount: matchingOrders.length,
+          totalSpent: totalSpent,
+          lastOrderDate: matchingOrders[0]?.createdAt || order.createdAt,
+          createdAt: matchingOrders[matchingOrders.length - 1]?.createdAt || order.createdAt,
+          orders: matchingOrders
+        });
+      }
+    }
+
+    const customerList = Array.from(customerMap.values());
+    res.json({ success: true, count: customerList.length, data: customerList });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

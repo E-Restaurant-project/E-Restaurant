@@ -11,6 +11,7 @@ const DEFAULT_SETTINGS = {
   standardDeliveryFee: 1.50,
   freeDeliveryThreshold: 25.00,
   khrRate: 4100,
+  categoryDiscounts: {},
   announcement: {
     active: true,
     text_km: '🔥 ប្រូម៉ូសិនពិសេស៖ បញ្ចុះតម្លៃ ១០% សម្រាប់ការកុម្ម៉ង់ដំបូងដោយប្រើកូដ PHUM10!',
@@ -42,13 +43,19 @@ export const RestaurantProvider = ({ children }) => {
     }
   });
 
-  // 2. Orders State
+  // 2. Orders State (Pure Database Data)
   const [orders, setOrders] = useState(() => {
     try {
       const saved = localStorage.getItem(API_CONFIG.STORAGE_KEYS.ORDERS);
-      return saved ? JSON.parse(saved) : INITIAL_ORDERS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && !parsed.some(o => o.id === 'PY-ORD-1001' || o.customerName?.includes('Chan Sopheap'))) {
+          return parsed;
+        }
+      }
+      return [];
     } catch {
-      return INITIAL_ORDERS;
+      return [];
     }
   });
 
@@ -110,10 +117,14 @@ export const RestaurantProvider = ({ children }) => {
         } catch (_) {}
       }
 
-      // Orders
+      // Orders from Database
       const ordersRes = await apiService.getOrders();
-      if (isMounted && ordersRes.success && Array.isArray(ordersRes.data) && ordersRes.data.length > 0) {
-        setOrders(ordersRes.data.map(o => ({ ...o, id: o.orderId || o._id })));
+      if (isMounted && ordersRes.success && Array.isArray(ordersRes.data)) {
+        const backendOrders = ordersRes.data.map(o => ({ ...o, id: o.orderId || o._id }));
+        setOrders(backendOrders);
+        try {
+          localStorage.setItem(API_CONFIG.STORAGE_KEYS.ORDERS, JSON.stringify(backendOrders));
+        } catch (_) {}
       }
 
       // Settings
@@ -134,6 +145,28 @@ export const RestaurantProvider = ({ children }) => {
       isMounted = false;
     };
   }, []);
+
+  // Real-time broadcast channel to sync live between Admin and Customer Frontend tabs
+  const syncChannel = useMemo(() => {
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      return new BroadcastChannel('phum_yeung_deals_sync');
+    }
+    return null;
+  }, []);
+
+  useEffect(() => {
+    if (!syncChannel) return;
+    const handleMsg = (e) => {
+      if (e.data?.type === 'SETTINGS_UPDATED' && e.data.storeSettings) {
+        setStoreSettings(e.data.storeSettings);
+      }
+      if (e.data?.type === 'DISHES_UPDATED' && Array.isArray(e.data.dishes)) {
+        setDishes(e.data.dishes);
+      }
+    };
+    syncChannel.addEventListener('message', handleMsg);
+    return () => syncChannel.removeEventListener('message', handleMsg);
+  }, [syncChannel]);
 
   // Sync to localStorage
   useEffect(() => {
@@ -212,7 +245,14 @@ export const RestaurantProvider = ({ children }) => {
 
     setOrders((prev) => [newOrder, ...prev]);
     // Call Node.js API
-    apiService.createOrder(newOrder);
+    try {
+      const res = await apiService.createOrder(newOrder);
+      if (res && res.success && res.data) {
+        return res.data;
+      }
+    } catch (err) {
+      console.warn('[RestaurantContext] createOrder error:', err);
+    }
     return newOrder;
   };
 

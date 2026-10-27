@@ -11,7 +11,8 @@ import {
   resendCode,
   customerLogin,
   getMe,
-  updateProfile
+  updateProfile,
+  getCustomers
 } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -40,6 +41,10 @@ router.post('/resend', resendCode);
 
 router.post('/customer-login', customerLogin);
 router.post('/customer/login', customerLogin);
+
+// Customer Management (Real Database Customers)
+router.get('/customers', getCustomers);
+router.get('/admin/customers', getCustomers);
 
 // Customer Profile
 router.get('/me', protect, getMe);

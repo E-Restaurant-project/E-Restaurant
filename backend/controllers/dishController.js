@@ -6,6 +6,20 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
+const NON_SPICY_CATEGORIES = [
+  'snacks-bari',
+  'beverages',
+  'beer-wine',
+  'drinks',
+  'drink',
+  'beverage',
+  'beer',
+  'wine',
+  'cigarette',
+  'cigarettes',
+  'bari'
+];
+
 const getDishQuery = (id) => {
   if (id && mongoose.Types.ObjectId.isValid(id)) {
     return { $or: [{ _id: id }, { dishId: id }] };
@@ -165,9 +179,30 @@ export const getDishById = async (req, res) => {
 // @route   POST /api/dishes
 export const createDish = async (req, res) => {
   try {
+    let { price, price_khr } = req.body;
+    if (price_khr !== undefined && price_khr !== null) {
+      price_khr = Math.max(100, Math.round(Number(price_khr)));
+      price = parseFloat((price_khr / 4100).toFixed(4));
+    } else if (price !== undefined && price !== null) {
+      const numP = Number(price);
+      if (numP >= 100) {
+        price_khr = Math.round(numP);
+        price = parseFloat((price_khr / 4100).toFixed(4));
+      } else {
+        price_khr = Math.max(100, Math.round(numP * 4100));
+        price = numP;
+      }
+    }
+
+    const category = req.body.category ? String(req.body.category).trim() : 'specials';
+    const isNonSpicy = NON_SPICY_CATEGORIES.includes(category.toLowerCase());
+
     const dishData = {
       ...req.body,
-      category: req.body.category ? String(req.body.category).trim() : 'specials',
+      price,
+      price_khr,
+      category,
+      spice_level: isNonSpicy ? 'none' : (req.body.spice_level || 'none'),
       name_en: req.body.name_en || req.body.name_km || '',
       dishId: req.body.dishId || `dish-${Date.now()}`
     };
@@ -183,8 +218,24 @@ export const createDish = async (req, res) => {
 export const updateDish = async (req, res) => {
   try {
     const updateData = { ...req.body };
+    if (updateData.price_khr !== undefined && updateData.price_khr !== null) {
+      updateData.price_khr = Math.max(100, Math.round(Number(updateData.price_khr)));
+      updateData.price = parseFloat((updateData.price_khr / 4100).toFixed(4));
+    } else if (updateData.price !== undefined && updateData.price !== null) {
+      const numP = Number(updateData.price);
+      if (numP >= 100) {
+        updateData.price_khr = Math.round(numP);
+        updateData.price = parseFloat((updateData.price_khr / 4100).toFixed(4));
+      } else {
+        updateData.price_khr = Math.max(100, Math.round(numP * 4100));
+        updateData.price = numP;
+      }
+    }
     if (updateData.category) {
       updateData.category = String(updateData.category).trim();
+      if (NON_SPICY_CATEGORIES.includes(updateData.category.toLowerCase())) {
+        updateData.spice_level = 'none';
+      }
     }
     const dish = await Dish.findOneAndUpdate(
       getDishQuery(req.params.id),
