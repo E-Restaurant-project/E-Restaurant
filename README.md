@@ -150,11 +150,3 @@ cd frontend
 npm run dev
 ```
 
----
-
-## 🔑 ព័ត៌មានគណនីគំរូ (Demo Credentials)
-- **Admin Portal**: `http://localhost:3000/admin/login`
-  - **Email**: `admin@phumyeung.com`
-  - **Password**: `admin123`
-- **Order ID សម្រាប់តេស្តតាមដាន (Track Order)**: `PY-ORD-1001` ឬ `PY-ORD-1002`
-- **កូដបញ្ចុះតម្លៃសម្រាប់ Cart**: `PHUM10` (10% OFF), `KHMER20` (20% OFF)
