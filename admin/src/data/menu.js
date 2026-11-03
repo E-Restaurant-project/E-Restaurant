@@ -2381,74 +2381,6 @@ export const INITIAL_MENU = [
     "ingredients_en": []
   },
   {
-    "id": "clt2aej4c001oqokucisgo2pg",
-    "dishId": "clt2aej4c001oqokucisgo2pg",
-    "name_km": "បារី 555 ចុចហឹរ",
-    "name_en": "555 Menthol Click Cigarettes",
-    "category": "snacks-bari",
-    "price": 2.9,
-    "spice_level": "none",
-    "featured": false,
-    "rating": 4.8999999999999995,
-    "reviews_count": 60,
-    "image": "/images/foods/clt2aej4c001oqokucisgo2pg.png",
-    "desc_km": "បារី និងកន្សែងត្រជាក់សម្រាប់បំពេញតម្រូវការរបស់លោកអ្នក។",
-    "desc_en": "Cigarettes and cold towels for your convenience.",
-    "ingredients_km": [],
-    "ingredients_en": []
-  },
-  {
-    "id": "clsbu6kke000t9u6jzsretpkj",
-    "dishId": "clsbu6kke000t9u6jzsretpkj",
-    "name_km": "បារី Mevius Original",
-    "name_en": "Mevius Original Blue Cigarettes",
-    "category": "snacks-bari",
-    "price": 2.9,
-    "spice_level": "none",
-    "featured": false,
-    "rating": 4.8,
-    "reviews_count": 67,
-    "image": "/images/foods/clsbu6kke000t9u6jzsretpkj.png",
-    "desc_km": "បារី និងកន្សែងត្រជាក់សម្រាប់បំពេញតម្រូវការរបស់លោកអ្នក។",
-    "desc_en": "Cigarettes and cold towels for your convenience.",
-    "ingredients_km": [],
-    "ingredients_en": []
-  },
-  {
-    "id": "clsbs4wvu000xerp7tmxj3o53",
-    "dishId": "clsbs4wvu000xerp7tmxj3o53",
-    "name_km": "បារី Esse Change ចុចហឹរ",
-    "name_en": "Esse Change Menthol Cigarettes",
-    "category": "snacks-bari",
-    "price": 2.5,
-    "spice_level": "none",
-    "featured": false,
-    "rating": 5,
-    "reviews_count": 74,
-    "image": "/images/foods/clsbs4wvu000xerp7tmxj3o53.png",
-    "desc_km": "បារី និងកន្សែងត្រជាក់សម្រាប់បំពេញតម្រូវការរបស់លោកអ្នក។",
-    "desc_en": "Cigarettes and cold towels for your convenience.",
-    "ingredients_km": [],
-    "ingredients_en": []
-  },
-  {
-    "id": "cm8yfrlc60030kw03c05lj4f5",
-    "dishId": "cm8yfrlc60030kw03c05lj4f5",
-    "name_km": "កន្សែងត្រជាក់",
-    "name_en": "Cold Refreshing Towel",
-    "category": "snacks-bari",
-    "price": 2.5,
-    "spice_level": "none",
-    "featured": false,
-    "rating": 4.8999999999999995,
-    "reviews_count": 81,
-    "image": "/images/foods/cm8yfrlc60030kw03c05lj4f5.jpg",
-    "desc_km": "បារី និងកន្សែងត្រជាក់សម្រាប់បំពេញតម្រូវការរបស់លោកអ្នក។",
-    "desc_en": "Cigarettes and cold towels for your convenience.",
-    "ingredients_km": [],
-    "ingredients_en": []
-  },
-  {
     "id": "clxyli9g300033wl98or74sf0",
     "dishId": "clxyli9g300033wl98or74sf0",
     "name_km": "ស៊ុប​ប្រហិត​ត្រី",
@@ -2797,18 +2729,13 @@ export const CATEGORIES = [
     "label_en": "Other Dishes & Sides"
   },
   {
-    "id": "snacks-bari",
-    "label_km": "បា​រី",
-    "label_en": "Bari & Cigarettes"
-  },
-  {
     "id": "soups",
     "label_km": "ស៊ុបភូមិយើង",
     "label_en": "Phum Yeung Soups"
   }
 ];
 
-export const NON_SPICY_CATEGORY_IDS = ['snacks-bari', 'beverages', 'beer-wine'];
+export const NON_SPICY_CATEGORY_IDS = ['beverages', 'beer-wine'];
 
 export const isNonSpicyCategory = (categoryOrDish, catObj = null) => {
   if (!categoryOrDish && !catObj) return false;
@@ -2819,7 +2746,6 @@ export const isNonSpicyCategory = (categoryOrDish, catObj = null) => {
 
   const catId = String(cat || catObj?.id || '').toLowerCase().trim();
   const nonSpicyIds = [
-    'snacks-bari',
     'beverages',
     'beer-wine',
     'drinks',
