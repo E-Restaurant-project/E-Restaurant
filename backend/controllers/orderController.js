@@ -1,4 +1,6 @@
 import { Order } from '../models/Order.js';
+import { Payment } from '../models/Payment.js';
+import { OrderItem } from '../models/OrderItem.js';
 
 // @desc    Get all orders
 // @route   GET /api/orders
@@ -30,12 +32,25 @@ export const getOrders = async (req, res) => {
 export const getMyOrders = async (req, res) => {
   try {
     const user = req.user;
+    if (!user || !user.email) {
+      return res.status(401).json({ success: false, message: 'Not authorized' });
+    }
+
+    const cleanEmail = user.email.toLowerCase().trim();
+    const escapedEmail = cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Strictly match orders belonging ONLY to this user's account (email or customer_id).
+    // Note: Never match by phone number alone to prevent cross-account order leakage.
     const query = {
       $or: [
-        { email: user.email.toLowerCase() },
-        ...(user.phone ? [{ phone: user.phone }] : [])
+        { email: cleanEmail },
+        { email: { $regex: new RegExp(`^${escapedEmail}$`, 'i') } }
       ]
     };
+
+    if (user._id) {
+      query.$or.push({ customer_id: String(user._id) });
+    }
 
     const orders = await Order.find(query).sort({ createdAt: -1 });
     res.json({ success: true, count: orders.length, data: orders });
@@ -64,12 +79,48 @@ export const getOrderById = async (req, res) => {
 // @route   POST /api/orders
 export const createOrder = async (req, res) => {
   try {
+    const orderId = req.body.orderId || `PY-ORD-${Math.floor(1000 + Math.random() * 9000)}`;
     const orderData = {
       ...req.body,
-      orderId: req.body.orderId || `PY-ORD-${Math.floor(1000 + Math.random() * 9000)}`
+      orderId,
+      order_id: orderId
     };
 
     const order = await Order.create(orderData);
+
+    // 1. Automatically create corresponding Payment record in payments collection
+    try {
+      const isPaid = order.paymentMethod === 'khqr' || req.body.isPaid;
+      await Payment.create({
+        payment_id: `PAY-${order.orderId}`,
+        order_id: order.orderId,
+        payment_method: order.paymentMethod || 'cod',
+        khqr_ref: order.paymentMethod === 'khqr' ? `KHQR-HASH-${order.orderId}` : `COD-${order.orderId}`,
+        amount: order.total || 0,
+        currency: 'USD',
+        status: isPaid ? 'paid' : 'pending'
+      });
+    } catch (payErr) {
+      console.warn('[OrderController] Warning: Could not create Payment record:', payErr.message);
+    }
+
+    // 2. Automatically create OrderItem records in orderitems collection
+    try {
+      if (Array.isArray(order.items) && order.items.length > 0) {
+        const orderItemDocs = order.items.map((it, idx) => ({
+          order_item_id: `ITEM-${order.orderId}-${idx + 1}`,
+          order_id: order.orderId,
+          product_id: it.dishId || it.id || `PROD-${idx + 1}`,
+          quantity: it.quantity || 1,
+          price: it.price || 0,
+          notes: it.notes || ''
+        }));
+        await OrderItem.insertMany(orderItemDocs);
+      }
+    } catch (itemErr) {
+      console.warn('[OrderController] Warning: Could not create OrderItem records:', itemErr.message);
+    }
+
     res.status(201).json({ success: true, data: order });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -92,6 +143,16 @@ export const updateOrderStatus = async (req, res) => {
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
+
+    // Synchronize Payment status if order completed or cancelled
+    try {
+      if (status === 'completed') {
+        await Payment.findOneAndUpdate({ order_id: cleanId }, { status: 'paid' });
+      } else if (status === 'cancelled') {
+        await Payment.findOneAndUpdate({ order_id: cleanId }, { status: 'failed' });
+      }
+    } catch (_) {}
+
     res.json({ success: true, data: order });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });

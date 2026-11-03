@@ -8,7 +8,6 @@ import {
   uploadMiddleware,
   uploadDishImage
 } from '../controllers/dishController.js';
-import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -17,11 +16,11 @@ router.post('/upload', uploadMiddleware.single('image'), uploadDishImage);
 
 router.route('/')
   .get(getDishes)
-  .post(protect, createDish);
+  .post(createDish);
 
 router.route('/:id')
   .get(getDishById)
-  .put(protect, updateDish)
-  .delete(protect, deleteDish);
+  .put(updateDish)
+  .delete(deleteDish);
 
 export default router;

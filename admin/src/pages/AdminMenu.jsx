@@ -4,17 +4,18 @@ import { Plus, Edit2, Trash2, Search, Star, Flame, RefreshCw } from 'lucide-reac
 import { useLanguage } from '../hooks/useLanguage';
 import { useRestaurant } from '../hooks/useRestaurant';
 import { useToast } from '../hooks/useToast';
-import { CATEGORIES } from '../data/menu';
+import { CATEGORIES, isNonSpicyCategory } from '../data/menu';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { DishFormModal } from '../components/admin/DishFormModal';
 import { DeleteConfirmModal } from '../components/admin/DeleteConfirmModal';
 import { getImageUrl } from '../config/api';
+import { getEffectiveDiscount, getDiscountedPrice, getDiscountedPriceKHR } from '../utils/discount';
 
 export const AdminMenu = () => {
   const { t, language, formatCurrency } = useLanguage();
-  const { dishes, allCategories, addDish, updateDish, deleteDish, refreshData } = useRestaurant();
+  const { dishes, allCategories, addDish, updateDish, deleteDish, refreshData, storeSettings } = useRestaurant();
   const { showToast } = useToast();
   const isKm = language === 'km';
   const categoryOptions = allCategories && allCategories.length > 0 ? allCategories : CATEGORIES;
@@ -232,10 +233,41 @@ export const AdminMenu = () => {
                       </span>
                     </td>
                     <td style={{ fontWeight: 700, color: 'var(--color-primary)' }}>
-                      {formatCurrency(dish.price)}
+                      {(() => {
+                        const originalKhr = dish.price_khr || Math.max(100, Math.round(Number(dish.price || 0) * 4100));
+                        const effectiveDiscount = getEffectiveDiscount(dish, storeSettings?.categoryDiscounts);
+                        if (effectiveDiscount > 0) {
+                          const discountedKhr = Math.round(originalKhr * (1 - effectiveDiscount / 100));
+                          return (
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ fontSize: '0.98rem', color: '#dc2626', fontWeight: 800 }}>
+                                  {discountedKhr.toLocaleString()} ៛
+                                </span>
+                                <span style={{ fontSize: '0.68rem', backgroundColor: '#fee2e2', color: '#dc2626', padding: '1px 5px', borderRadius: '4px', fontWeight: 800 }}>
+                                  -{effectiveDiscount}%
+                                </span>
+                              </div>
+                              <div style={{ fontSize: '0.72rem', textDecoration: 'line-through', color: '#94a3b8', fontWeight: 400 }}>
+                                {originalKhr.toLocaleString()} ៛ (≈ ${(dish.price || 0).toFixed(2)})
+                              </div>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div>
+                            <div style={{ fontSize: '0.98rem' }}>
+                              {originalKhr.toLocaleString()} ៛
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                              ≈ ${(dish.price || 0).toFixed(2)}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td>
-                      {dish.spice_level && dish.spice_level !== 'none' ? (
+                      {!isNonSpicyCategory(dish) && dish.spice_level && dish.spice_level !== 'none' ? (
                         <span style={{ fontSize: '0.85rem' }}>🌶️ {dish.spice_level}</span>
                       ) : (
                         <span style={{ color: 'var(--color-text-light)', fontSize: '0.8rem' }}>None</span>

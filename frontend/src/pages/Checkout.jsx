@@ -267,6 +267,7 @@ export const Checkout = () => {
     setSubmitting(true);
     setTimeout(async () => {
       const orderPayload = {
+        customer_id: customerUser?._id || customerUser?.id || null,
         customerName: formData.fullName.trim(),
         phone: formData.phone.trim(),
         email: formData.email.trim(),
@@ -276,6 +277,7 @@ export const Checkout = () => {
         pickupTime: orderType === 'pickup' ? formData.pickupTime : '',
         notes: formData.notes.trim(),
         paymentMethod,
+        isPaid: paymentMethod === 'khqr' && khqrPaid,
         items: [...items],
         subtotal,
         deliveryFee: orderType === 'delivery' ? deliveryFee : 0,
