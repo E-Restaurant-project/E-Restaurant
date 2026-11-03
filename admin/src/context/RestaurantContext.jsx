@@ -33,7 +33,7 @@ export const RestaurantProvider = ({ children }) => {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 20 && !parsed.some(d => d.category === 'khmer_classics')) {
-          return parsed;
+          return parsed.filter(d => d.category !== 'snacks-bari');
         }
       }
       return INITIAL_MENU;
@@ -88,10 +88,11 @@ export const RestaurantProvider = ({ children }) => {
       const saved = localStorage.getItem('phum_yeung_categories_v3');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length >= initial.length && !parsed.some(c => c.id === 'khmer_classics')) {
-          const existingIds = new Set(parsed.map(c => c.id));
+        if (Array.isArray(parsed) && !parsed.some(c => c.id === 'khmer_classics')) {
+          const cleaned = parsed.filter(c => c.id !== 'snacks-bari');
+          const existingIds = new Set(cleaned.map(c => c.id));
           const missing = initial.filter(c => !existingIds.has(c.id));
-          return [...parsed, ...missing];
+          return [...cleaned, ...missing];
         }
       }
       localStorage.setItem('phum_yeung_categories_v3', JSON.stringify(initial));
