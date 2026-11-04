@@ -14,8 +14,8 @@ const dishSchema = new mongoose.Schema(
     price_khr: { type: Number, min: 100 },
     discount_percent: { type: Number, default: 0, min: 0, max: 100 },
     spice_level: {
-      type: String,
       enum: ['none', 'mild', 'medium', 'hot'],
+      type: String,
       default: 'none'
     },
     featured: { type: Boolean, default: false },
@@ -26,7 +26,29 @@ const dishSchema = new mongoose.Schema(
     desc_km: { type: String, default: '' },
     desc_en: { type: String, default: '' },
     ingredients_km: [{ type: String }],
-    ingredients_en: [{ type: String }]
+    ingredients_en: [{ type: String }],
+    createdBy: {
+      id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      name: { type: String, default: 'Admin' },
+      email: { type: String, default: '' },
+      at: { type: Date, default: Date.now }
+    },
+    updatedBy: {
+      id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      name: { type: String, default: 'Admin' },
+      email: { type: String, default: '' },
+      at: { type: Date, default: Date.now }
+    },
+    activityLogs: [
+      {
+        action: { type: String, required: true },
+        adminName: { type: String, default: 'Admin' },
+        adminEmail: { type: String, default: '' },
+        adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        details: { type: String, default: '' },
+        at: { type: Date, default: Date.now }
+      }
+    ]
   },
   { timestamps: true }
 );

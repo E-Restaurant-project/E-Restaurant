@@ -66,8 +66,8 @@ async function main() {
     // Generate 2FA Secret Key
     const secret = generateSecret();
 
-    // Hash password with bcrypt
-    const salt = await bcrypt.genSalt(10);
+    // Hash password with bcrypt (cost factor 12)
+    const salt = await bcrypt.genSalt(12);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     if (existing) {

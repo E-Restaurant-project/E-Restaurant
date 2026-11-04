@@ -10,8 +10,13 @@ const userSchema = new mongoose.Schema(
     address: { type: String, default: '' },
     role: { type: String, enum: ['admin', 'customer', 'staff'], default: 'customer' },
     isVerified: { type: Boolean, default: false },
+    googleId: { type: String, default: null },
+    avatar: { type: String, default: '' },
     verificationCode: { type: String, default: null },
     verificationCodeExpires: { type: Date, default: null },
+    resetPasswordCode: { type: String, default: null },
+    resetPasswordExpires: { type: Date, default: null },
+    twoFactorEnabled: { type: Boolean, default: false },
     twoFactorCode: { type: String, default: null },
     twoFactorExpires: { type: Date, default: null },
     twoFactorSecret: { type: String, default: null }

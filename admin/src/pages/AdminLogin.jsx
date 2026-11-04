@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   ShieldCheck,
   Lock,
@@ -10,18 +10,14 @@ import {
   AlertCircle,
   CheckCircle,
   Eye,
-  EyeOff,
-  QrCode,
-  Copy,
-  Check,
-  Smartphone
+  EyeOff
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../hooks/useLanguage';
 import { Button } from '../components/common/Button';
 
 export const AdminLogin = () => {
-  const { login, verify2FA, resend2FA, get2FASetup, reset2FA, isAuthenticated } = useAuth();
+  const { login, verify2FA, resend2FA, isAuthenticated } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
 
@@ -37,12 +33,6 @@ export const AdminLogin = () => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [resending, setResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
-
-  // Authenticator Key Setup State
-  const [showKeySetup, setShowKeySetup] = useState(false);
-  const [setupData, setSetupData] = useState(null);
-  const [loadingSetup, setLoadingSetup] = useState(false);
-  const [copiedKey, setCopiedKey] = useState(false);
 
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -147,48 +137,6 @@ export const AdminLogin = () => {
     otpInputsRef.current[Math.min(digits.length, 5)]?.focus();
   };
 
-  // Load and toggle 2FA Key / QR Code Setup
-  const handleToggleKeySetup = async () => {
-    if (showKeySetup) {
-      setShowKeySetup(false);
-      return;
-    }
-
-    setShowKeySetup(true);
-    if (!setupData) {
-      setLoadingSetup(true);
-      const res = await get2FASetup(email || 'admin@phumyeung.com');
-      setLoadingSetup(false);
-      if (res.success && res.data) {
-        setSetupData(res.data);
-      }
-    }
-  };
-
-  // Copy 2FA Key to clipboard
-  const handleCopyKey = () => {
-    if (setupData?.secret) {
-      navigator.clipboard.writeText(setupData.secret);
-      setCopiedKey(true);
-      setTimeout(() => setCopiedKey(false), 2200);
-    }
-  };
-
-  // Reset 2FA Key and QR Code
-  const handleResetKey = async () => {
-    if (!window.confirm('តើអ្នកពិតជាចង់បង្កើត 2FA Key & QR Code ថ្មីមែនទេ? (Generate new 2FA Key?)')) return;
-    setLoadingSetup(true);
-    setError('');
-    const res = await reset2FA(email || 'admin@phumyeung.com');
-    setLoadingSetup(false);
-    if (res.success && res.data) {
-      setSetupData(res.data);
-      setSuccessMsg('បានបង្កើត QR Code ថ្មីជោគជ័យ! សូមស្កេនចូល Google Authenticator ជាថ្មី។');
-    } else {
-      setError(res.error || 'Failed to reset 2FA key.');
-    }
-  };
-
   // Resend 2FA Email Code
   const handleResend = async () => {
     if (resending || resendCooldown > 0) return;
@@ -207,8 +155,8 @@ export const AdminLogin = () => {
 
   return (
     <div className="admin-login-wrap">
-      <div className="admin-login-card" style={{ maxWidth: showKeySetup ? '520px' : '460px', transition: 'max-width 0.3s ease' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-md)' }}>
+      <div className="admin-login-card" style={{ maxWidth: '440px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginBottom: 'var(--space-md)' }}>
           <a
             href="http://localhost:3000"
             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}
@@ -216,25 +164,6 @@ export const AdminLogin = () => {
             <ArrowLeft size={16} />
             <span>{t('common.back_home')}</span>
           </a>
-
-          <button
-            type="button"
-            onClick={handleToggleKeySetup}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--color-primary)',
-              fontSize: '0.82rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '5px'
-            }}
-          >
-            <QrCode size={14} />
-            <span>{showKeySetup ? 'Hide 2FA Key' : '2FA Key / QR Code'}</span>
-          </button>
         </div>
 
         <img
@@ -311,153 +240,6 @@ export const AdminLogin = () => {
           </div>
         )}
 
-        {/* 2FA SETUP / QR CODE EXPANDABLE CARD */}
-        {showKeySetup && (
-          <div style={{
-            backgroundColor: '#fbf9f5',
-            border: '1.5px solid var(--color-primary-subtle, #e7d8d8)',
-            borderRadius: '12px',
-            padding: '16px',
-            marginBottom: 'var(--space-md)',
-            textAlign: 'left'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: 'var(--color-primary)' }}>
-              <Smartphone size={18} />
-              <strong style={{ fontSize: '0.92rem' }}>Google Authenticator (2FA Key Setup)</strong>
-            </div>
-
-            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '0 0 12px', lineHeight: 1.5 }}>
-              Scan the QR code with <strong>Google Authenticator</strong> or <strong>Microsoft Authenticator</strong> on your phone, or copy the Secret Key below:
-            </p>
-
-            {loadingSetup && (
-              <div style={{ textAlign: 'center', padding: '16px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                <RefreshCw size={18} className="animate-spin" style={{ display: 'inline-block', marginBottom: '4px' }} />
-                <div>Generating 2FA security key...</div>
-              </div>
-            )}
-
-            {setupData && !loadingSetup && (
-              <div>
-                <div style={{ textAlign: 'center', margin: '8px 0 14px' }}>
-                  <img
-                    src={setupData.qrCode}
-                    alt="2FA QR Code"
-                    style={{
-                      width: '150px',
-                      height: '150px',
-                      borderRadius: '8px',
-                      border: '2px solid #ddd',
-                      display: 'inline-block',
-                      backgroundColor: '#fff',
-                      padding: '4px'
-                    }}
-                  />
-                </div>
-
-                <div style={{ fontSize: '0.78rem', color: '#666', marginBottom: '4px' }}>
-                  <strong>Manual 2FA Secret Key:</strong>
-                </div>
-
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  padding: '6px 10px'
-                }}>
-                  <code style={{
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    letterSpacing: '1.5px',
-                    color: 'var(--color-primary)',
-                    fontFamily: 'monospace',
-                    wordBreak: 'break-all',
-                    flex: 1
-                  }}>
-                    {setupData.secret}
-                  </code>
-
-                  <button
-                    type="button"
-                    onClick={handleCopyKey}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '4px 8px',
-                      background: copiedKey ? '#dcfce7' : 'var(--color-primary-subtle, #f5f0f0)',
-                      color: copiedKey ? '#15803d' : 'var(--color-primary)',
-                      border: 'none',
-                      borderRadius: '4px',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {copiedKey ? <Check size={13} /> : <Copy size={13} />}
-                    <span>{copiedKey ? 'Copied' : 'Copy'}</span>
-                  </button>
-                </div>
-
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  marginTop: '12px'
-                }}>
-                  <button
-                    type="button"
-                    onClick={handleResetKey}
-                    disabled={loadingSetup}
-                    style={{
-                      flex: 1,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '5px',
-                      padding: '7px 12px',
-                      background: '#fff',
-                      color: 'var(--color-primary)',
-                      border: '1.5px solid var(--color-primary)',
-                      borderRadius: '6px',
-                      fontSize: '0.78rem',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <RefreshCw size={13} className={loadingSetup ? 'animate-spin' : ''} />
-                    <span>Reset / Generate New Key</span>
-                  </button>
-                </div>
-
-                <div style={{
-                  backgroundColor: '#fef3c7',
-                  border: '1px solid #fde68a',
-                  borderRadius: '6px',
-                  padding: '8px 10px',
-                  marginTop: '10px',
-                  fontSize: '0.78rem',
-                  color: '#92400e',
-                  lineHeight: 1.4
-                }}>
-                  <strong>🚨 Emergency Master Backup Code:</strong>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 800, letterSpacing: '2px', color: '#800020', margin: '3px 0' }}>
-                    888999
-                  </div>
-                  <div>If your phone clock is desynced or authenticator is lost, you can enter <strong>888999</strong> to log in.</div>
-                </div>
-
-                <div style={{ fontSize: '0.74rem', color: '#666', marginTop: '10px', lineHeight: 1.4 }}>
-                  💡 <strong>Tip for Google Authenticator:</strong> If codes fail, in the app go to <em>Settings → Time correction for codes → Sync now</em>.
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* STEP 1: CREDENTIALS */}
         {step === 'credentials' && (
           <form onSubmit={handleCredentialsSubmit} style={{ textAlign: 'left' }}>
@@ -469,7 +251,7 @@ export const AdminLogin = () => {
               <input
                 type="email"
                 className="form-input"
-                placeholder="admin@phumyeung.com"
+                placeholder="admin@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -546,15 +328,14 @@ export const AdminLogin = () => {
               backgroundColor: '#f8fafc',
               border: '1px solid #e2e8f0',
               borderRadius: '8px',
-              padding: '8px 12px',
+              padding: '10px 14px',
               marginBottom: 'var(--space-md)',
-              fontSize: '0.78rem',
+              fontSize: '0.82rem',
               color: '#475569',
               lineHeight: 1.5,
               textAlign: 'left'
             }}>
-              <div>📱 <strong>Google Authenticator:</strong> បញ្ចូលកូដ ៦ ខ្ទង់ដែលកំពុងដំណើរការ</div>
-              <div>🚨 <strong>Emergency Master Code:</strong> ប្រសិនបើម៉ោងទូរស័ព្ទរអិល ឬ Authenticator ខុស សូមបញ្ចូល <strong style={{ color: '#800020', letterSpacing: '1px' }}>888999</strong></div>
+              <div>📱 <strong>Google Authenticator:</strong> បញ្ចូលកូដ ៦ ខ្ទង់ពីកម្មវិធី Authenticator របស់អ្នក។</div>
             </div>
 
             <div className="admin-otp-box" onPaste={handleOtpPaste}>
@@ -621,4 +402,3 @@ export const AdminLogin = () => {
     </div>
   );
 };
-

@@ -6,37 +6,92 @@ import {
   Users,
   UtensilsCrossed,
   ArrowRight,
-  Download,
+  Printer,
   Plus,
-  PieChart
+  PieChart,
+  Calendar,
+  Filter
 } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useRestaurant } from '../hooks/useRestaurant';
+import { useAuth } from '../hooks/useAuth';
+import { printOrdersReport } from '../utils/printReport';
+import { PrintReportModal } from '../components/admin/PrintReportModal';
 import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { getImageUrl } from '../config/api';
 
 export const AdminDashboard = () => {
   const { t, language, formatCurrency } = useLanguage();
-  const { stats, orders, dishes, exportOrdersToCSV } = useRestaurant();
+  const { stats, orders, dishes } = useRestaurant();
+  const { user } = useAuth();
+  const [isPrintModalOpen, setIsPrintModalOpen] = React.useState(false);
+  const [dashboardPeriod, setDashboardPeriod] = React.useState('all'); // 'all' | 'today' | 'yesterday' | 'week' | 'month'
   const isKm = language === 'km';
 
-  const recentOrders = orders.slice(0, 5);
+  const periodOptions = [
+    { id: 'all', label: isKm ? 'គ្រប់ពេល' : 'All Time' },
+    { id: 'today', label: isKm ? 'ថ្ងៃនេះ' : 'Today' },
+    { id: 'yesterday', label: isKm ? 'ម្សិលមិញ' : 'Yesterday' },
+    { id: 'week', label: isKm ? '៧ ថ្ងៃ' : '7 Days' },
+    { id: 'month', label: isKm ? 'ខែនេះ' : 'This Month' }
+  ];
+
+  // Dynamic filtered orders for dashboard based on selected period
+  const periodOrders = React.useMemo(() => {
+    if (dashboardPeriod === 'all') return orders;
+
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+    let start = null;
+    let end = endOfToday;
+
+    if (dashboardPeriod === 'today') {
+      start = startOfToday;
+    } else if (dashboardPeriod === 'yesterday') {
+      const yStart = new Date(startOfToday);
+      yStart.setDate(yStart.getDate() - 1);
+      const yEnd = new Date(endOfToday);
+      yEnd.setDate(yEnd.getDate() - 1);
+      start = yStart;
+      end = yEnd;
+    } else if (dashboardPeriod === 'week') {
+      const wStart = new Date(startOfToday);
+      wStart.setDate(wStart.getDate() - 7);
+      start = wStart;
+    } else if (dashboardPeriod === 'month') {
+      start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+    }
+
+    return orders.filter((o) => {
+      const t = new Date(o.created_at || o.createdAt || Date.now()).getTime();
+      return (!start || t >= start.getTime()) && (!end || t <= end.getTime());
+    });
+  }, [orders, dashboardPeriod]);
+
+  const periodRevenue = React.useMemo(() => {
+    return periodOrders
+      .filter((o) => o.status !== 'cancelled')
+      .reduce((sum, o) => sum + (Number(o.total_usd || o.total) || 0), 0);
+  }, [periodOrders]);
+
+  const recentOrders = periodOrders.slice(0, 5);
   const popularDishes = dishes.slice(0, 4);
 
   // Sales by category calculation
   const categorySales = React.useMemo(() => {
     const map = {};
-    orders.forEach((o) => {
+    periodOrders.forEach((o) => {
       o.items?.forEach((it) => {
-        // Find dish category
         const dish = dishes.find((d) => d.id === it.dishId);
         const cat = dish?.category || 'Other';
         map[cat] = (map[cat] || 0) + it.price * it.quantity;
       });
     });
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
-  }, [orders, dishes]);
+  }, [periodOrders, dishes]);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -55,12 +110,52 @@ export const AdminDashboard = () => {
 
   return (
     <div>
-      <div className="admin-topbar">
-        <h1 className="admin-topbar__title">{t('admin.nav_dashboard')}</h1>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <Button variant="outline" size="sm" onClick={exportOrdersToCSV} icon={<Download size={16} />}>
-            {t('admin.export_csv')}
+      {/* Top Header with Visible Filter Controls */}
+      <div className="admin-topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h1 className="admin-topbar__title">{t('admin.nav_dashboard')}</h1>
+          <p style={{ margin: '2px 0 0 0', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+            {isKm ? 'ទិដ្ឋភាពទូទៅនៃប្រតិបត្តិការ និងការលក់របស់ភោជនីយដ្ឋាន' : 'Overview of restaurant operations and sales'}
+          </p>
+        </div>
+
+        {/* Visible Filter Toolbar & Action Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Visible Period Filter Buttons on Screen */}
+          <div style={{ display: 'flex', background: '#f1f5f9', padding: '3px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            {periodOptions.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setDashboardPeriod(opt.id)}
+                style={{
+                  padding: '6px 11px',
+                  borderRadius: '6px',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                  backgroundColor: dashboardPeriod === opt.id ? '#881337' : 'transparent',
+                  color: dashboardPeriod === opt.id ? '#ffffff' : '#475569',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Filter & Print Report Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsPrintModalOpen(true)}
+            icon={<Printer size={16} />}
+            style={{ fontWeight: 700 }}
+          >
+            {isKm ? '🖨️ តម្រង & បោះពុម្ព (Print)' : '🖨️ Filter & Print'}
           </Button>
+
           <Link to="/admin/menu?action=add">
             <Button variant="primary" size="sm" icon={<Plus size={16} />}>
               {t('admin.add_dish')}
@@ -79,9 +174,11 @@ export const AdminDashboard = () => {
             </div>
             <div>
               <div className="admin-stat-val">
-                {formatCurrency(stats.todayRevenue)}
+                {formatCurrency(dashboardPeriod === 'all' ? (stats.todayRevenue || periodRevenue) : periodRevenue)}
               </div>
-              <div className="admin-stat-label">{t('admin.stat_revenue')}</div>
+              <div className="admin-stat-label">
+                {dashboardPeriod === 'all' ? t('admin.stat_revenue') : `${t('admin.stat_revenue')} (${periodOptions.find(p => p.id === dashboardPeriod)?.label})`}
+              </div>
             </div>
           </div>
 
@@ -91,8 +188,12 @@ export const AdminDashboard = () => {
               <ShoppingBag size={26} />
             </div>
             <div>
-              <div className="admin-stat-val">{stats.totalOrdersCount}</div>
-              <div className="admin-stat-label">{t('admin.stat_orders')}</div>
+              <div className="admin-stat-val">
+                {dashboardPeriod === 'all' ? stats.totalOrdersCount : periodOrders.length}
+              </div>
+              <div className="admin-stat-label">
+                {dashboardPeriod === 'all' ? t('admin.stat_orders') : `${t('admin.stat_orders')} (${periodOptions.find(p => p.id === dashboardPeriod)?.label})`}
+              </div>
             </div>
           </div>
 
@@ -128,84 +229,113 @@ export const AdminDashboard = () => {
                 {t('admin.recent_orders')}
               </h3>
               <Link to="/admin/orders" style={{ fontSize: '0.85rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
-                <span>{t('featured.view_all')}</span>
+                {t('admin.view_all_orders')}
                 <ArrowRight size={14} />
               </Link>
             </div>
 
-            <div className="admin-table-container">
+            <div className="table-responsive">
               <table className="admin-table">
                 <thead>
                   <tr>
-                    <th>Order ID</th>
-                    <th>Customer</th>
-                    <th>Destination</th>
-                    <th>Total</th>
-                    <th>{t('admin.status')}</th>
+                    <th>{t('admin.order_id')}</th>
+                    <th>{t('admin.order_customer')}</th>
+                    <th>{t('admin.order_destination')}</th>
+                    <th>{t('admin.order_total')}</th>
+                    <th>{t('admin.order_status')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recentOrders.map((ord) => (
-                    <tr key={ord.id}>
-                      <td style={{ fontWeight: 700, color: 'var(--color-primary)' }}>{ord.id}</td>
-                      <td>
-                        <div style={{ fontWeight: 600 }}>{ord.customerName}</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{ord.phone}</div>
+                  {recentOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: 'var(--space-xl)', color: 'var(--color-text-muted)' }}>
+                        {t('common.empty')}
                       </td>
-                      <td>
-                        <span style={{ fontSize: '0.85rem' }}>{ord.address ? ord.address.substring(0, 25) + '...' : 'Self-Pickup'}</span>
-                      </td>
-                      <td style={{ fontWeight: 700 }}>
-                        {formatCurrency(ord.total)}
-                      </td>
-                      <td>{getStatusBadge(ord.status)}</td>
                     </tr>
-                  ))}
+                  ) : (
+                    recentOrders.map((order) => (
+                      <tr key={order.id}>
+                        <td>
+                          <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
+                            #{order.id}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 600 }}>{order.customerName}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                            {order.phone}
+                          </div>
+                        </td>
+                        <td>
+                          <div style={{ fontSize: '0.85rem', maxWidth: '180px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {order.address}
+                          </div>
+                        </td>
+                        <td style={{ fontWeight: 700 }}>
+                          {formatCurrency(order.total)}
+                        </td>
+                        <td>{getStatusBadge(order.status)}</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* Sales By Category Breakdown */}
+          {/* Sales by Category */}
           <div className="admin-card">
             <div className="admin-card__header">
-              <h3 style={{ fontSize: '1.1rem', color: 'var(--color-primary-dark)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <h3 style={{ fontSize: '1.1rem', color: 'var(--color-primary-dark)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <PieChart size={18} />
-                <span>{t('admin.category_sales')}</span>
+                {t('admin.sales_by_category')}
               </h3>
             </div>
 
-            <div style={{ padding: 'var(--space-md)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {categorySales.map(([cat, total]) => (
-                <div key={cat}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '4px' }}>
-                    <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>{cat.replace('_', ' ')}</span>
-                    <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>{formatCurrency(total)}</span>
-                  </div>
-                  <div style={{ height: '8px', backgroundColor: 'var(--color-bg-subtle)', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div
-                      style={{
-                        height: '100%',
-                        backgroundColor: 'var(--color-secondary)',
-                        width: `${Math.min(100, (total / (stats.todayRevenue || 1)) * 100)}%`
-                      }}
-                    />
-                  </div>
+            <div style={{ padding: 'var(--space-md)' }}>
+              {categorySales.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 'var(--space-lg)', color: 'var(--color-text-muted)' }}>
+                  {t('common.empty')}
                 </div>
-              ))}
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+                  {categorySales.map(([cat, amount]) => {
+                    const totalSales = categorySales.reduce((sum, [, a]) => sum + a, 0);
+                    const pct = totalSales > 0 ? Math.round((amount / totalSales) * 100) : 0;
+                    return (
+                      <div key={cat}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '4px' }}>
+                          <span style={{ fontWeight: 600 }}>{cat}</span>
+                          <span>{formatCurrency(amount)} ({pct}%)</span>
+                        </div>
+                        <div style={{ height: '8px', backgroundColor: 'var(--color-bg)', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div
+                            style={{
+                              height: '100%',
+                              width: `${pct}%`,
+                              backgroundColor: 'var(--color-primary)',
+                              borderRadius: '4px',
+                              transition: 'width var(--transition-normal)'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Popular Dishes */}
+        {/* Top Selling Products */}
         <div className="admin-card">
           <div className="admin-card__header">
             <h3 style={{ fontSize: '1.1rem', color: 'var(--color-primary-dark)' }}>
-              {t('admin.popular_items')}
+              {t('admin.popular_dishes')}
             </h3>
-            <Link to="/admin/menu" style={{ fontSize: '0.85rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
-              <span>Manage Menu</span>
-              <ArrowRight size={14} />
+            <Link to="/admin/menu" style={{ fontSize: '0.85rem', color: 'var(--color-primary)' }}>
+              Manage Menu &rarr;
             </Link>
           </div>
 
@@ -228,6 +358,14 @@ export const AdminDashboard = () => {
             ))}
           </div>
         </div>
+
+        {/* Print Filter & Live Preview Modal */}
+        <PrintReportModal
+          isOpen={isPrintModalOpen}
+          onClose={() => setIsPrintModalOpen(false)}
+          orders={orders}
+          adminUser={user}
+        />
       </div>
     </div>
   );

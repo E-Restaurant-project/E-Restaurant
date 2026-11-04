@@ -87,6 +87,37 @@ export const AuthProvider = ({ children }) => {
     return await apiService.resendCode(email);
   };
 
+  
+  // Customer forgot password (request OTP)
+  const customerForgotPassword = async (email) => {
+    setLoading(true);
+    const res = await apiService.forgotPassword(email);
+    setLoading(false);
+    return res;
+  };
+
+  // Customer reset password (verify OTP & set new password)
+  const customerResetPassword = async (email, code, newPassword) => {
+    setLoading(true);
+    const res = await apiService.resetPassword(email, code, newPassword);
+    setLoading(false);
+    return res;
+  };
+
+  
+  // Customer Google Login
+  const customerGoogleLogin = async (credential) => {
+    setLoading(true);
+    const res = await apiService.googleLogin(credential);
+    if (res.success && res.data?.token) {
+      setCustomerUser(res.data);
+      setLoading(false);
+      return { success: true, data: res.data };
+    }
+    setLoading(false);
+    return { success: false, error: res.error || 'Google sign-in failed' };
+  };
+
   // Customer login
   const customerLogin = async (email, password) => {
     setLoading(true);
@@ -100,7 +131,6 @@ export const AuthProvider = ({ children }) => {
     return {
       success: false,
       error: res.error || 'Invalid email or password',
-      devCode: res.devCode
     };
   };
 
@@ -137,6 +167,9 @@ export const AuthProvider = ({ children }) => {
         customerVerify,
         customerResend,
         customerLogin,
+        customerGoogleLogin,
+        customerForgotPassword,
+        customerResetPassword,
         customerUpdateProfile,
         customerLogout
       }}

@@ -45,7 +45,6 @@ const request = async (endpoint, options = {}) => {
       return {
         success: false,
         error: data.message || `Request failed with status ${response.status}`,
-        devCode: data.devCode
       };
     }
     return {
@@ -53,7 +52,6 @@ const request = async (endpoint, options = {}) => {
       responseCode: data.responseCode,
       isPaid: data.isPaid,
       data: data.data !== undefined ? data.data : data,
-      devCode: data.devCode,
       message: data.message || data.responseMessage
     };
   } catch (err) {
@@ -62,6 +60,9 @@ const request = async (endpoint, options = {}) => {
 };
 
 export const apiService = {
+  // Categories
+  getCategories: async () => request('/categories'),
+
   // Dishes
   getDishes: async () => request('/dishes'),
   getDish: async (id) => request(`/dishes/${id}`),
@@ -85,29 +86,17 @@ export const apiService = {
     }
   },
 
-  // Orders
-  getOrders: async () => request('/orders'),
+  // Orders (Customer)
   getOrder: async (orderId) => request(`/orders/${orderId}`),
   getMyOrders: async () => request('/orders/my-orders'),
   createOrder: async (orderData) => request('/orders', { method: 'POST', body: JSON.stringify(orderData) }),
-  updateOrderStatus: async (orderId, status) =>
-    request(`/orders/${orderId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 
-  // Promos
+  // Promos (Customer read-only)
   getPromos: async () => request('/promos'),
   validatePromo: async (code) => request(`/promos/validate/${code}`),
-  createPromo: async (promoData) => request('/promos', { method: 'POST', body: JSON.stringify(promoData) }),
-  updatePromo: async (id, promoData) => request(`/promos/${id}`, { method: 'PUT', body: JSON.stringify(promoData) }),
-  deletePromo: async (id) => request(`/promos/${id}`, { method: 'DELETE' }),
 
-  // Settings
+  // Settings (Customer read-only)
   getSettings: async () => request('/settings'),
-  updateSettings: async (settingsData) => request('/settings', { method: 'PUT', body: JSON.stringify(settingsData) }),
-
-  // Admin Auth
-  login: async (email, password) =>
-    request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
-  getMe: async () => request('/auth/me'),
 
   // Customer Auth
   registerCustomer: async (customerData) =>
@@ -116,6 +105,12 @@ export const apiService = {
     request('/auth/customer/verify', { method: 'POST', body: JSON.stringify({ email, code }) }),
   resendCode: async (email) =>
     request('/auth/customer/resend', { method: 'POST', body: JSON.stringify({ email }) }),
+    forgotPassword: async (email) =>
+    request('/auth/customer/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+  resetPassword: async (email, code, newPassword) =>
+    request('/auth/customer/reset-password', { method: 'POST', body: JSON.stringify({ email, code, newPassword }) }),
+  googleLogin: async (data) =>
+    request('/auth/customer/google', { method: 'POST', body: JSON.stringify(typeof data === 'string' ? { credential: data } : data) }),
   customerLogin: async (email, password) =>
     request('/auth/customer/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   updateCustomerProfile: async (profileData) =>

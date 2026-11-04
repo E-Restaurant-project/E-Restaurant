@@ -6,19 +6,19 @@ import {
   updatePromo,
   deletePromo
 } from '../controllers/promoController.js';
-import { protect } from '../middleware/authMiddleware.js';
+import { protectAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.route('/')
   .get(getPromos)
-  .post(protect, createPromo);
+  .post(protectAdmin, createPromo);
 
 router.route('/validate/:code')
   .get(validatePromo);
 
 router.route('/:id')
-  .put(protect, updatePromo)
-  .delete(protect, deletePromo);
+  .put(protectAdmin, updatePromo)
+  .delete(protectAdmin, deletePromo);
 
 export default router;

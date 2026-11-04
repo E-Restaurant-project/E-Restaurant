@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, Link } from 'react-router-dom';
-import { ShoppingBag, Menu as MenuIcon, X, Truck, AlertCircle, User } from 'lucide-react';
+import { NavLink, Link, useLocation } from 'react-router-dom';
+import { ShoppingBag, Menu as MenuIcon, X, Truck, AlertCircle, User, Utensils } from 'lucide-react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useCart } from '../../hooks/useCart';
 import { useRestaurant } from '../../hooks/useRestaurant';
@@ -12,6 +12,7 @@ export const Navbar = () => {
   const { itemCount, isCartBouncing } = useCart();
   const { storeSettings } = useRestaurant();
   const { isCustomerLoggedIn, customerUser } = useAuth();
+  const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -96,24 +97,18 @@ export const Navbar = () => {
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation: Food List (Home) / Track Order / About Us / Contact */}
           <nav className="navbar__nav">
             <NavLink
               to="/"
-              end
               className={({ isActive }) =>
-                `navbar__link ${isActive ? 'navbar__link--active' : ''}`
+                `navbar__link ${isActive || location.pathname === '/menu' ? 'navbar__link--active' : ''}`
               }
             >
-              {t('nav.home')}
-            </NavLink>
-            <NavLink
-              to="/menu"
-              className={({ isActive }) =>
-                `navbar__link ${isActive ? 'navbar__link--active' : ''}`
-              }
-            >
-              {t('nav.menu')}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                <Utensils size={15} />
+                <span>{t('nav.menu')}</span>
+              </span>
             </NavLink>
             <NavLink
               to="/track-order"
@@ -191,8 +186,6 @@ export const Navbar = () => {
               )}
             </Link>
 
-
-
             <button
               type="button"
               className="navbar__mobile-toggle"
@@ -216,22 +209,12 @@ export const Navbar = () => {
         <div className={`mobile-nav ${mobileOpen ? 'mobile-nav--open' : ''}`}>
           <NavLink
             to="/"
-            end
             className={({ isActive }) =>
-              `mobile-nav__link ${isActive ? 'mobile-nav__link--active' : ''}`
+              `mobile-nav__link ${isActive || location.pathname === '/menu' ? 'mobile-nav__link--active' : ''}`
             }
             onClick={closeMobile}
           >
-            {t('nav.home')}
-          </NavLink>
-          <NavLink
-            to="/menu"
-            className={({ isActive }) =>
-              `mobile-nav__link ${isActive ? 'mobile-nav__link--active' : ''}`
-            }
-            onClick={closeMobile}
-          >
-            {t('nav.menu')}
+            🍲 {t('nav.menu')}
           </NavLink>
           <NavLink
             to="/track-order"
@@ -240,7 +223,7 @@ export const Navbar = () => {
             }
             onClick={closeMobile}
           >
-            {t('nav.track_order')}
+            🛵 {t('nav.track_order')}
           </NavLink>
           <NavLink
             to="/about"
@@ -249,7 +232,7 @@ export const Navbar = () => {
             }
             onClick={closeMobile}
           >
-            {t('nav.about')}
+            ℹ️ {t('nav.about')}
           </NavLink>
           <NavLink
             to="/contact"
@@ -258,7 +241,7 @@ export const Navbar = () => {
             }
             onClick={closeMobile}
           >
-            {t('nav.contact')}
+            📞 {t('nav.contact')}
           </NavLink>
           <NavLink
             to={isCustomerLoggedIn ? '/account' : '/auth'}
@@ -269,7 +252,6 @@ export const Navbar = () => {
           >
             👤 {isCustomerLoggedIn ? (customerUser?.name || t('nav.account')) : t('nav.login')}
           </NavLink>
-
         </div>
       </header>
     </>

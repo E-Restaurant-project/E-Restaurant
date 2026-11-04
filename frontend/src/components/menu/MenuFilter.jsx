@@ -1,9 +1,16 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useRestaurant } from '../../hooks/useRestaurant';
-import { CATEGORIES } from '../../data/menu';
 import { CustomSelect } from '../common/CustomSelect';
+
+const resolveCategoryLabel = (cat, isKm) => {
+  if (!cat) return '';
+  if (isKm) {
+    return cat.label_km || cat.name_km || cat.label_en || cat.name_en || cat.id || '';
+  }
+  return cat.label_en || cat.name_en || cat.label_km || cat.name_km || cat.id || '';
+};
 
 export const MenuFilter = ({
   searchQuery,
@@ -18,7 +25,7 @@ export const MenuFilter = ({
   const { language, t } = useLanguage();
   const { allCategories, storeSettings } = useRestaurant();
   const isKm = language === 'km';
-  const categoryList = allCategories && allCategories.length > 0 ? allCategories : CATEGORIES;
+  const categoryList = allCategories || [];
 
   const trackRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -52,70 +59,147 @@ export const MenuFilter = ({
 
   const handleCategorySelect = (catId, e) => {
     onCategoryChange(catId);
-    if (e?.currentTarget) {
-      e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    if (e && e.currentTarget && trackRef.current) {
+      const btn = e.currentTarget;
+      const track = trackRef.current;
+      const btnLeft = btn.offsetLeft;
+      const btnWidth = btn.offsetWidth;
+      const trackWidth = track.clientWidth;
+      const targetScroll = btnLeft - (trackWidth / 2) + (btnWidth / 2);
+      track.scrollTo({ left: Math.max(0, targetScroll), behavior: 'smooth' });
     }
   };
 
   const handleWheel = (e) => {
-    if (!trackRef.current) return;
-    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-      trackRef.current.scrollLeft += e.deltaY * 0.8;
+    if (trackRef.current && Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+      trackRef.current.scrollLeft += e.deltaY;
     }
   };
 
-  const spiceOptions = [
-    { id: 'all', label: t('menu.all_spices') },
-    { id: 'none', label: t('menu.spice_none') },
-    { id: 'mild', label: t('menu.spice_mild') },
-    { id: 'medium', label: t('menu.spice_medium') },
-    { id: 'hot', label: t('menu.spice_hot') }
-  ];
-
   const sortOptions = [
-    { id: 'featured', label: t('menu.sort_featured') },
-    { id: 'price_low', label: t('menu.sort_price_low') },
-    { id: 'price_high', label: t('menu.sort_price_high') }
+    { id: 'default', label: isKm ? 'លំនាំដើម' : 'Default' },
+    { id: 'price-asc', label: isKm ? 'តម្លៃ: ទាប ទៅ ខ្ពស់' : 'Price: Low to High' },
+    { id: 'price-desc', label: isKm ? 'តម្លៃ: ខ្ពស់ ទៅ ទាប' : 'Price: High to Low' },
+    { id: 'name-asc', label: isKm ? 'ឈ្មោះ: ក-អ (A-Z)' : 'Name: A-Z' },
+    { id: 'rating', label: isKm ? 'ពិន្ទុពេញនិយមបំផុត' : 'Highest Rated' }
   ];
 
   return (
     <div className="menu-filter">
-      <div className="menu-filter__row">
-        {/* Search input */}
-        <div className="menu-filter__search-box">
-          <Search size={18} className="menu-filter__search-icon" />
+      {/* Top Search & Filter Bar */}
+      <div
+        className="menu-filter__row"
+        style={{
+          display: 'flex',
+          gap: '12px',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          justifyContent: 'space-between',
+          marginBottom: '14px'
+        }}
+      >
+        {/* Search Input */}
+        <div
+          className="menu-filter__search-box"
+          style={{
+            flex: '1 1 280px',
+            minWidth: '240px',
+            position: 'relative'
+          }}
+        >
+          <Search
+            size={18}
+            className="menu-filter__search-icon"
+            style={{
+              position: 'absolute',
+              left: '14px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--color-text-light)',
+              pointerEvents: 'none'
+            }}
+          />
           <input
             type="text"
             className="form-input menu-filter__search-input"
-            placeholder={t('menu.search_placeholder')}
+            style={{
+              width: '100%',
+              paddingLeft: '42px',
+              paddingRight: searchQuery ? '40px' : '14px',
+              height: '46px',
+              borderRadius: '12px',
+              fontSize: '0.92rem'
+            }}
+            placeholder={t('menu.search_placeholder') || (isKm ? 'ស្វែងរកមុខម្ហូបតាមឈ្មោះ...' : 'Search dishes by name...')}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => onSearchChange('')}
+              style={{
+                position: 'absolute',
+                right: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: '#e2e8f0',
+                border: 'none',
+                borderRadius: '50%',
+                width: '22px',
+                height: '22px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#475569'
+              }}
+              aria-label="Clear search"
+            >
+              <X size={13} />
+            </button>
+          )}
         </div>
 
-        {/* Spice Level & Sort Filters */}
-        <div className="menu-filter__dropdowns" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ minWidth: '160px' }}>
+        {/* Filter Controls (Spice & Sort) in unified flex row */}
+        <div
+          style={{
+            display: 'flex',
+            gap: '10px',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            flex: '0 0 auto'
+          }}
+        >
+          {/* Spice Filter */}
+          <div style={{ minWidth: '180px' }}>
             <CustomSelect
-              options={spiceOptions}
+              options={[
+                { id: 'all', label: isKm ? 'កម្រិតហិរទាំងអស់' : 'All Spice Levels' },
+                { id: 'none', label: isKm ? 'មិនហិរ' : 'Non-Spicy' },
+                { id: 'mild', label: isKm ? 'ហិរតិចៗ' : 'Mild' },
+                { id: 'medium', label: isKm ? 'ហិរមធ្យម' : 'Medium' },
+                { id: 'hot', label: isKm ? 'ហិរខ្លាំង' : 'Hot' }
+              ]}
               value={spiceFilter}
-              onChange={(val) => onSpiceChange(val)}
-              placeholder={t('menu.all_spices')}
+              onChange={onSpiceChange}
+              placeholder={isKm ? 'កម្រិតហិរទាំងអស់' : 'All Spice Levels'}
             />
           </div>
 
-          <div style={{ minWidth: '175px' }}>
+          {/* Sort Filter */}
+          <div style={{ minWidth: '180px' }}>
             <CustomSelect
               options={sortOptions}
               value={sortBy}
-              onChange={(val) => onSortChange(val)}
-              placeholder={t('menu.sort_featured')}
+              onChange={onSortChange}
+              placeholder={isKm ? 'តម្រៀបតាម...' : 'Sort by...'}
             />
           </div>
         </div>
       </div>
 
-      {/* Category Pills - Smooth Horizontal Scroll (No Scrollbar, No Jitter) */}
+      {/* Category Pills - Smooth Horizontal Scroll */}
       <div className="menu-filter__categories-wrapper">
         {canScrollLeft && (
           <button
@@ -133,43 +217,66 @@ export const MenuFilter = ({
           className="menu-filter__categories-scroll-area"
           onWheel={handleWheel}
         >
-          {categoryList.map((cat) => {
-            const isActive = activeCategory === cat.id;
-            const label = isKm ? cat.label_km : cat.label_en;
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                className={`menu-filter__cat-btn ${isActive ? 'menu-filter__cat-btn--active' : ''}`}
-                onClick={(e) => handleCategorySelect(cat.id, e)}
-              >
-                <span>{label}</span>
-                {(() => {
-                  const catKey = String(cat.id).trim().toLowerCase();
-                  const catDisc = Number(storeSettings?.categoryDiscounts?.[catKey] || storeSettings?.categoryDiscounts?.[cat.id] || 0);
-                  if (catDisc > 0) {
-                    return (
-                      <span
-                        style={{
-                          marginLeft: '6px',
-                          backgroundColor: isActive ? '#ffffff' : '#dc2626',
-                          color: isActive ? '#dc2626' : '#ffffff',
-                          fontSize: '0.68rem',
-                          fontWeight: 800,
-                          padding: '1px 6px',
-                          borderRadius: '9999px',
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                        }}
-                      >
-                        -{catDisc}%
-                      </span>
-                    );
-                  }
-                  return null;
-                })()}
-              </button>
-            );
-          })}
+          {/* Primary All Dishes Pill */}
+          <button
+            type="button"
+            className={`menu-filter__cat-btn ${activeCategory === 'all' ? 'menu-filter__cat-btn--active' : ''}`}
+            onClick={(e) => handleCategorySelect('all', e)}
+          >
+            <span>{isKm ? '🍽️ មុខម្ហូបទាំងអស់' : '🍽️ All Dishes'}</span>
+          </button>
+
+          {categoryList.length === 0 && (
+            <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', display: 'inline-flex', alignItems: 'center', padding: '0 8px', fontStyle: 'italic', whiteSpace: 'nowrap' }}>
+              {isKm ? '(មិនទាន់មានប្រភេទមុខម្ហូបនៅឡើយទេ)' : '(No categories created yet)'}
+            </span>
+          )}
+          {categoryList
+            .filter((cat) => {
+              if (!cat) return false;
+              const lbl = resolveCategoryLabel(cat, isKm);
+              return typeof lbl === 'string' && lbl.trim().length > 0;
+            })
+            .map((cat, idx) => {
+              const rawId = cat.id || cat.slug || cat.category_id || String(cat._id || `cat-${idx}`);
+              const catId = rawId.replace(/_/g, '-');
+              const uniqueKey = `cat-btn-${catId}-${idx}`;
+              const isActive = activeCategory === catId || activeCategory === rawId;
+              const label = resolveCategoryLabel(cat, isKm);
+              return (
+                <button
+                  key={uniqueKey}
+                  type="button"
+                  className={`menu-filter__cat-btn ${isActive ? 'menu-filter__cat-btn--active' : ''}`}
+                  onClick={(e) => handleCategorySelect(catId, e)}
+                >
+                  <span>{label}</span>
+                  {(() => {
+                    const catKey = String(catId).trim().toLowerCase();
+                    const catDisc = Number(storeSettings?.categoryDiscounts?.[catKey] || storeSettings?.categoryDiscounts?.[cat.id] || 0);
+                    if (catDisc > 0) {
+                      return (
+                        <span
+                          style={{
+                            marginLeft: '6px',
+                            backgroundColor: isActive ? '#ffffff' : '#dc2626',
+                            color: isActive ? '#dc2626' : '#ffffff',
+                            fontSize: '0.68rem',
+                            fontWeight: 800,
+                            padding: '1px 6px',
+                            borderRadius: '9999px',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                          }}
+                        >
+                          -{catDisc}%
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
+                </button>
+              );
+            })}
         </div>
 
         {canScrollRight && (

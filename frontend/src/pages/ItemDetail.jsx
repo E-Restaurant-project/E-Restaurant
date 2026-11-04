@@ -15,7 +15,7 @@ import { useCart } from '../hooks/useCart';
 import { DishCard } from '../components/menu/DishCard';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
-import { CATEGORIES, isNonSpicyCategory } from '../data/menu';
+import { isNonSpicyCategory } from '../data/menu';
 import { getImageUrl } from '../config/api';
 import { getEffectiveDiscount, getDiscountedPrice, getDiscountedPriceKHR } from '../utils/discount';
 
@@ -54,7 +54,7 @@ export const ItemDetail = () => {
   const discountedPrice = getDiscountedPrice(dish, storeSettings?.categoryDiscounts);
   const dualDiscountedPrice = formatDualCurrency(discountedPrice);
 
-  const categoryList = allCategories && allCategories.length > 0 ? allCategories : CATEGORIES;
+  const categoryList = allCategories || [];
   const catObj = categoryList.find((c) => c.id === dish.category);
   const categoryLabel = catObj ? (isKm ? catObj.label_km : catObj.label_en) : dish.category;
   const showSpiceLevel = !isNonSpicyCategory(dish, catObj) && dish?.spice_level !== 'none';

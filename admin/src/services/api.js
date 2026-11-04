@@ -48,7 +48,6 @@ const request = async (endpoint, options = {}) => {
       message: data.message,
       requires2FA: data.requires2FA,
       email: data.email,
-      devCode: data.devCode
     };
   } catch (err) {
     return { success: false, error: err.message, isOffline: true };
@@ -56,25 +55,28 @@ const request = async (endpoint, options = {}) => {
 };
 
 export const apiService = {
-  // Admin Auth & 2FA
+  // Admin Auth & Profile
   login: async (email, password) =>
     request('/auth/admin/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   verify2FA: async (email, code) =>
     request('/auth/admin/verify-2fa', { method: 'POST', body: JSON.stringify({ email, code }) }),
   resend2FA: async (email) =>
     request('/auth/admin/resend-2fa', { method: 'POST', body: JSON.stringify({ email }) }),
-  get2FASetup: async (email) =>
-    request(`/auth/admin/2fa-setup?email=${encodeURIComponent(email || '')}`),
-  reset2FA: async (email) =>
-    request('/auth/admin/reset-2fa', { method: 'POST', body: JSON.stringify({ email }) }),
   getMe: async () => request('/auth/me'),
+  updateProfile: async (profileData) =>
+    request('/auth/profile', { method: 'PUT', body: JSON.stringify(profileData) }),
+  getAdmins: async () => request('/auth/admins'),
 
   // Dishes Management
   getDishes: async () => request('/dishes'),
   getDish: async (id) => request(`/dishes/${id}`),
   createDish: async (dishData) => request('/dishes', { method: 'POST', body: JSON.stringify(dishData) }),
   updateDish: async (id, dishData) => request(`/dishes/${id}`, { method: 'PUT', body: JSON.stringify(dishData) }),
-  deleteDish: async (id) => request(`/dishes/${id}`, { method: 'DELETE' }),
+  deleteDish: async (id, params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/dishes/${id}${qs ? `?${qs}` : ''}`, { method: 'DELETE' });
+  },
+  getAuditLogs: async () => request('/dishes/audit-logs'),
   uploadDishImage: async (file) => {
     try {
       const formData = new FormData();

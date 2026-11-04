@@ -1,6 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { INITIAL_MENU, CATEGORIES } from '../data/menu';
-import { INITIAL_ORDERS } from '../data/initialData';
 import { API_CONFIG } from '../config/api';
 import { apiService } from '../services/api';
 
@@ -25,21 +23,45 @@ const INITIAL_PROMOS = [
   { id: 'promo-3', code: 'VIP30', discount: 30, active: false, description: '30% OFF Special VIP Deal' }
 ];
 
+
+const normalizeCategoryItem = (c) => {
+  if (!c) return null;
+  const id = (c.id || c.slug || c.category_id || String(c._id || '')).trim();
+  const label_km = (c.label_km || c.name_km || '').trim();
+  const label_en = (c.label_en || c.name_en || '').trim();
+
+  return {
+    ...c,
+    id,
+    slug: id,
+    category_id: id,
+    label_km: label_km || label_en || id,
+    name_km: label_km || label_en || id,
+    label_en: label_en || label_km || id,
+    name_en: label_en || label_km || id,
+    order: c.order !== undefined ? Number(c.order) : 0
+  };
+};
+
 export const RestaurantProvider = ({ children }) => {
   const [dishes, setDishes] = useState(() => {
     try {
-      // Clear legacy storage key to purge any previously deleted ghost dishes
       localStorage.removeItem('phum_yeung_menu');
       const saved = localStorage.getItem(API_CONFIG.STORAGE_KEYS.MENU);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 20 && !parsed.some(d => d.category === 'khmer_classics')) {
+        if (Array.isArray(parsed)) {
+          // If contains legacy seeded dishes, purge and start fresh
+          if (parsed.some(d => d.id === 'cmt1krpbt00180aj7e18d2xp6' || d.dishId === 'cmt1krpbt00180aj7e18d2xp6')) {
+            localStorage.removeItem(API_CONFIG.STORAGE_KEYS.MENU);
+            return [];
+          }
           return parsed;
         }
       }
-      return INITIAL_MENU;
+      return [];
     } catch {
-      return INITIAL_MENU;
+      return [];
     }
   });
 
@@ -82,20 +104,21 @@ export const RestaurantProvider = ({ children }) => {
   // 5. Food Categories State
   const [categories, setCategories] = useState(() => {
     try {
-      const initial = CATEGORIES.filter(c => c.id !== 'all');
       const saved = localStorage.getItem('phum_yeung_categories_v3');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length >= initial.length && !parsed.some(c => c.id === 'khmer_classics')) {
-          const existingIds = new Set(parsed.map(c => c.id));
-          const missing = initial.filter(c => !existingIds.has(c.id));
-          return [...parsed, ...missing];
+        if (Array.isArray(parsed)) {
+          // If contains legacy seeded categories, purge and start fresh
+          if (parsed.length >= 13 && parsed.some(c => c.id === 'specials' || c.slug === 'specials')) {
+            localStorage.removeItem('phum_yeung_categories_v3');
+            return [];
+          }
+          return parsed.map(normalizeCategoryItem).filter(Boolean);
         }
       }
-      localStorage.setItem('phum_yeung_categories_v3', JSON.stringify(initial));
-      return initial;
+      return [];
     } catch {
-      return CATEGORIES.filter(c => c.id !== 'all');
+      return [];
     }
   });
 
@@ -109,7 +132,7 @@ export const RestaurantProvider = ({ children }) => {
     const fetchBackendData = async () => {
       // Dishes: backend database is the single source of truth
       const dishesRes = await apiService.getDishes();
-      if (isMounted && dishesRes.success && Array.isArray(dishesRes.data) && dishesRes.data.length > 0) {
+      if (isMounted && dishesRes.success && Array.isArray(dishesRes.data)) {
         const backendDishes = dishesRes.data.map(d => ({ ...d, id: d.dishId || d._id }));
         setDishes(backendDishes);
         try {
@@ -124,6 +147,16 @@ export const RestaurantProvider = ({ children }) => {
         setOrders(backendOrders);
         try {
           localStorage.setItem(API_CONFIG.STORAGE_KEYS.ORDERS, JSON.stringify(backendOrders));
+        } catch (_) {}
+      }
+
+      // Categories from Database
+      const categoriesRes = await apiService.getCategories();
+      if (isMounted && categoriesRes.success && Array.isArray(categoriesRes.data)) {
+        const normalized = categoriesRes.data.map(normalizeCategoryItem).filter(Boolean);
+        setCategories(normalized);
+        try {
+          localStorage.setItem('phum_yeung_categories_v3', JSON.stringify(normalized));
         } catch (_) {}
       }
 
@@ -260,8 +293,6 @@ export const RestaurantProvider = ({ children }) => {
     setOrders((prev) =>
       prev.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order))
     );
-    // Call Node.js API
-    apiService.updateOrderStatus(orderId, newStatus);
   };
 
   const getOrderById = (orderId) => {
@@ -273,8 +304,6 @@ export const RestaurantProvider = ({ children }) => {
   // Settings Operations
   const updateStoreSettings = async (newSettings) => {
     setStoreSettings((prev) => ({ ...prev, ...newSettings }));
-    // Call Node.js API
-    apiService.updateSettings(newSettings);
   };
 
   // Promo Operations
@@ -288,8 +317,6 @@ export const RestaurantProvider = ({ children }) => {
       createdAt: new Date().toISOString()
     };
     setPromoCodes((prev) => [newPromo, ...prev]);
-    // Call Node.js API
-    apiService.createPromo(newPromo);
     return newPromo;
   };
 
@@ -297,14 +324,10 @@ export const RestaurantProvider = ({ children }) => {
     setPromoCodes((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...updatedFields } : p))
     );
-    // Call Node.js API
-    apiService.updatePromo(id, updatedFields);
   };
 
   const deletePromoCode = async (id) => {
     setPromoCodes((prev) => prev.filter((p) => p.id !== id));
-    // Call Node.js API
-    apiService.deletePromo(id);
   };
 
   const validatePromoCode = (code) => {

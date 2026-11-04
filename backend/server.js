@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { connectDB } from './config/db.js';
 
 // Route Imports
@@ -11,6 +13,7 @@ import promoRoutes from './routes/promoRoutes.js';
 import settingRoutes from './routes/settingRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import categoryRoutes from './routes/categoryRoutes.js';
 
 // Seed Models
 import { Dish } from './models/Dish.js';
@@ -30,21 +33,19 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust reverse proxy (Render, Vercel, Cloudflare) for accurate client IP in rate limiting
+app.set('trust proxy', 1);
+
+// Security Headers: Protection against XSS, clickjacking, sniffing
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allows images to load in frontend/admin
+  contentSecurityPolicy: false // Allows API to serve media and JSON without breaking inline scripts
+}));
+
 // Connect to MongoDB
 connectDB().then(async (conn) => {
   if (conn && mongoose.connection.readyState === 1) {
     try {
-      const adminExists = await User.findOne({ email: 'admin@phumyeung.com' });
-      if (!adminExists) {
-        await User.create({
-          name: 'Phum Yeung Admin',
-          email: 'admin@phumyeung.com',
-          password: 'admin123',
-          role: 'admin'
-        });
-        console.log('[Server] Default admin initialized: admin@phumyeung.com');
-      }
-
       const settingExists = await Setting.findOne();
       if (!settingExists) {
         await Setting.create({
@@ -135,6 +136,53 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// ==========================================
+// 🛡️ Rate Limiting & Anti-Brute-Force Shields
+// ==========================================
+// 1. General API Limiter: Max 300 requests per 15 minutes per IP
+const generalApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many requests from this IP. Please try again after 15 minutes.'
+  }
+});
+app.use('/api', generalApiLimiter);
+
+// 2. Strict Auth / Login Limiter: Max 15 attempts per 15 mins per IP (Stops brute-force & OTP bombing)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many login attempts. Please wait 15 minutes before trying again.'
+  }
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/admin/login', authLimiter);
+app.use('/api/auth/admin/verify-2fa', authLimiter);
+app.use('/api/auth/customer/login', authLimiter);
+app.use('/api/auth/customer/verify', authLimiter);
+
+// 3. Strict Order / Payment Limiter: Max 20 checkout/KHQR requests per 15 mins (Stops fake/spam orders)
+const orderCreationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Order creation rate exceeded. Please wait a moment.'
+  }
+});
+app.use('/api/orders/checkout', orderCreationLimiter);
+app.use('/api/payments/khqr/generate', orderCreationLimiter);
+
 // Mount Routes
 app.use('/api/dishes', dishRoutes);
 app.use('/api/orders', orderRoutes);
@@ -142,6 +190,7 @@ app.use('/api/promos', promoRoutes);
 app.use('/api/settings', settingRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/categories', categoryRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

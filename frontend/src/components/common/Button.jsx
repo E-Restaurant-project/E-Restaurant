@@ -5,6 +5,7 @@ export const Button = ({
   variant = 'primary', // primary | secondary | outline | ghost | danger
   size = 'md',        // sm | md | lg
   fullWidth = false,
+  block = false,
   className = '',
   disabled = false,
   onClick,
@@ -12,11 +13,12 @@ export const Button = ({
   icon = null,
   ...props
 }) => {
+  const isFull = fullWidth || block;
   const classes = [
     'btn',
     `btn--${variant}`,
     size !== 'md' ? `btn--${size}` : '',
-    fullWidth ? 'btn--full' : '',
+    isFull ? 'btn--full' : '',
     className
   ]
     .filter(Boolean)

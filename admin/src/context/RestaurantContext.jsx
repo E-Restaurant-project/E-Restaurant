@@ -1,6 +1,5 @@
+import { printOrdersReport } from '../utils/printReport';
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { INITIAL_MENU, CATEGORIES } from '../data/menu';
-import { INITIAL_ORDERS } from '../data/initialData';
 import { API_CONFIG } from '../config/api';
 import { apiService } from '../services/api';
 
@@ -25,6 +24,26 @@ const INITIAL_PROMOS = [
   { id: 'promo-3', code: 'VIP30', discount: 30, active: false, description: '30% OFF Special VIP Deal' }
 ];
 
+
+const normalizeCategoryItem = (c) => {
+  if (!c) return null;
+  const id = (c.id || c.slug || c.category_id || String(c._id || '')).trim();
+  const label_km = (c.label_km || c.name_km || '').trim();
+  const label_en = (c.label_en || c.name_en || '').trim();
+
+  return {
+    ...c,
+    id,
+    slug: id,
+    category_id: id,
+    label_km: label_km || label_en || id,
+    name_km: label_km || label_en || id,
+    label_en: label_en || label_km || id,
+    name_en: label_en || label_km || id,
+    order: c.order !== undefined ? Number(c.order) : 0
+  };
+};
+
 export const RestaurantProvider = ({ children }) => {
   const [dishes, setDishes] = useState(() => {
     try {
@@ -32,13 +51,18 @@ export const RestaurantProvider = ({ children }) => {
       const saved = localStorage.getItem(API_CONFIG.STORAGE_KEYS.MENU);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 20 && !parsed.some(d => d.category === 'khmer_classics')) {
+        if (Array.isArray(parsed)) {
+          // If contains legacy seeded dishes, purge and start fresh
+          if (parsed.some(d => d.id === 'cmt1krpbt00180aj7e18d2xp6' || d.dishId === 'cmt1krpbt00180aj7e18d2xp6')) {
+            localStorage.removeItem(API_CONFIG.STORAGE_KEYS.MENU);
+            return [];
+          }
           return parsed;
         }
       }
-      return INITIAL_MENU;
+      return [];
     } catch {
-      return INITIAL_MENU;
+      return [];
     }
   });
 
@@ -84,20 +108,21 @@ export const RestaurantProvider = ({ children }) => {
   // 5. Food Categories State
   const [categories, setCategories] = useState(() => {
     try {
-      const initial = CATEGORIES.filter(c => c.id !== 'all');
       const saved = localStorage.getItem('phum_yeung_categories_v3');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length >= initial.length && !parsed.some(c => c.id === 'khmer_classics')) {
-          const existingIds = new Set(parsed.map(c => c.id));
-          const missing = initial.filter(c => !existingIds.has(c.id));
-          return [...parsed, ...missing];
+        if (Array.isArray(parsed)) {
+          // If contains legacy seeded categories, purge and start fresh
+          if (parsed.length >= 13 && parsed.some(c => c.id === 'specials' || c.slug === 'specials')) {
+            localStorage.removeItem('phum_yeung_categories_v3');
+            return [];
+          }
+          return parsed.map(normalizeCategoryItem).filter(Boolean);
         }
       }
-      localStorage.setItem('phum_yeung_categories_v3', JSON.stringify(initial));
-      return initial;
+      return [];
     } catch {
-      return CATEGORIES.filter(c => c.id !== 'all');
+      return [];
     }
   });
 
@@ -111,7 +136,7 @@ export const RestaurantProvider = ({ children }) => {
     const fetchBackendData = async () => {
       // Dishes: backend database is the single source of truth
       const dishesRes = await apiService.getDishes();
-      if (isMounted && dishesRes.success && Array.isArray(dishesRes.data) && dishesRes.data.length > 0) {
+      if (isMounted && dishesRes.success && Array.isArray(dishesRes.data)) {
         const backendDishes = dishesRes.data.map(d => ({ ...d, id: d.dishId || d._id }));
         backendDishes.sort((a, b) => {
           const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -137,6 +162,16 @@ export const RestaurantProvider = ({ children }) => {
         setOrders(backendOrders);
         try {
           localStorage.setItem(API_CONFIG.STORAGE_KEYS.ORDERS, JSON.stringify(backendOrders));
+        } catch (_) {}
+      }
+
+      // Categories from Database
+      const categoriesRes = await apiService.getCategories();
+      if (isMounted && categoriesRes.success && Array.isArray(categoriesRes.data)) {
+        const normalized = categoriesRes.data.map(normalizeCategoryItem).filter(Boolean);
+        setCategories(normalized);
+        try {
+          localStorage.setItem('phum_yeung_categories_v3', JSON.stringify(normalized));
         } catch (_) {}
       }
 
@@ -174,6 +209,11 @@ export const RestaurantProvider = ({ children }) => {
   }, [dishes, syncChannel]);
 
   useEffect(() => {
+    localStorage.setItem('phum_yeung_categories_v3', JSON.stringify(categories));
+    syncChannel?.postMessage({ type: 'CATEGORIES_UPDATED', categories });
+  }, [categories, syncChannel]);
+
+  useEffect(() => {
     localStorage.setItem(API_CONFIG.STORAGE_KEYS.ORDERS, JSON.stringify(orders));
   }, [orders]);
 
@@ -186,8 +226,25 @@ export const RestaurantProvider = ({ children }) => {
     localStorage.setItem('phum_yeung_promos', JSON.stringify(promoCodes));
   }, [promoCodes]);
 
-  // Dish Operations (State + API)
+  // Helper to read active admin from auth storage
+  const getCurrentAdmin = () => {
+    try {
+      const raw = localStorage.getItem(API_CONFIG.STORAGE_KEYS.AUTH);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return {
+          adminName: parsed.name || parsed.user?.name || 'Admin',
+          adminEmail: parsed.email || parsed.user?.email || '',
+          adminId: parsed.id || parsed._id || parsed.user?.id || parsed.user?._id
+        };
+      }
+    } catch (_) {}
+    return { adminName: 'Admin', adminEmail: '', adminId: null };
+  };
+
+  // Dish Operations (State + API with Admin Audit Tracking)
   const addDish = async (dishData) => {
+    const admin = getCurrentAdmin();
     const generatedId = `dish-${Date.now()}`;
     const khrVal = dishData.price_khr !== undefined
       ? Number(dishData.price_khr)
@@ -196,6 +253,7 @@ export const RestaurantProvider = ({ children }) => {
       ? parseFloat((khrVal / 4100).toFixed(4))
       : Number(dishData.price);
 
+    const now = new Date().toISOString();
     const newDish = {
       ...dishData,
       id: generatedId,
@@ -205,15 +263,39 @@ export const RestaurantProvider = ({ children }) => {
       discount_percent: Number(dishData.discount_percent) || 0,
       rating: 5.0,
       reviews_count: 0,
-      inStock: true,
-      createdAt: new Date().toISOString()
+      inStock: dishData.inStock !== false,
+      createdBy: {
+        name: admin.adminName,
+        email: admin.adminEmail,
+        at: now
+      },
+      updatedBy: {
+        name: admin.adminName,
+        email: admin.adminEmail,
+        at: now
+      },
+      activityLogs: [
+        {
+          action: 'create',
+          adminName: admin.adminName,
+          adminEmail: admin.adminEmail,
+          details: `Created product "${dishData.name_km || dishData.name_en}"`,
+          at: now
+        }
+      ],
+      createdAt: now
     };
     // Optimistically prepend to state so it renders immediately at the top
     setDishes((prev) => [newDish, ...prev.filter(d => d.id !== generatedId)]);
 
-    // Send to Node.js backend
+    // Send to Node.js backend with authenticated admin name
     try {
-      const res = await apiService.createDish(newDish);
+      const res = await apiService.createDish({
+        ...newDish,
+        adminName: admin.adminName,
+        adminEmail: admin.adminEmail,
+        adminId: admin.adminId
+      });
       if (res && res.success && res.data) {
         const savedDish = {
           ...res.data,
@@ -223,7 +305,6 @@ export const RestaurantProvider = ({ children }) => {
           price_khr: res.data.price_khr !== undefined ? Number(res.data.price_khr) : newDish.price_khr,
           createdAt: res.data.createdAt || newDish.createdAt
         };
-        // Replace optimistic placeholder with real confirmed dish from database
         setDishes((prev) => [
           savedDish,
           ...prev.filter(d => d.id !== generatedId && d.dishId !== generatedId && d.id !== savedDish.id && d.dishId !== savedDish.dishId)
@@ -237,6 +318,9 @@ export const RestaurantProvider = ({ children }) => {
   };
 
   const updateDish = async (id, updatedFields) => {
+    const admin = getCurrentAdmin();
+    const now = new Date().toISOString();
+
     setDishes((prev) =>
       prev.map((dish) => {
         if (dish.id !== id && dish.dishId !== id) return dish;
@@ -260,12 +344,22 @@ export const RestaurantProvider = ({ children }) => {
           price_khr: khrVal !== undefined ? Number(khrVal) : (dish.price_khr || Math.round(Number(dish.price) * 4100)),
           discount_percent: updatedFields.discount_percent !== undefined
             ? Number(updatedFields.discount_percent)
-            : (dish.discount_percent || 0)
+            : (dish.discount_percent || 0),
+          updatedBy: {
+            name: admin.adminName,
+            email: admin.adminEmail,
+            at: now
+          }
         };
       })
     );
     try {
-      const res = await apiService.updateDish(id, updatedFields);
+      const res = await apiService.updateDish(id, {
+        ...updatedFields,
+        adminName: admin.adminName,
+        adminEmail: admin.adminEmail,
+        adminId: admin.adminId
+      });
       if (res && res.success && res.data) {
         setDishes((prev) =>
           prev.map((d) => (d.id === id || d.dishId === id ? { ...d, ...res.data } : d))
@@ -285,9 +379,14 @@ export const RestaurantProvider = ({ children }) => {
   };
 
   const deleteDish = async (id) => {
+    const admin = getCurrentAdmin();
     setDishes((prev) => prev.filter((dish) => dish.id !== id && dish.dishId !== id));
     try {
-      await apiService.deleteDish(id);
+      await apiService.deleteDish(id, {
+        adminName: admin.adminName,
+        adminEmail: admin.adminEmail,
+        adminId: admin.adminId
+      });
       await refreshData();
     } catch (err) {
       console.warn('[RestaurantContext] deleteDish error:', err);
@@ -429,7 +528,7 @@ export const RestaurantProvider = ({ children }) => {
     ];
   }, [categories]);
 
-  const addCategory = (catData) => {
+  const addCategory = async (catData) => {
     let id = catData.id?.trim().toLowerCase() || '';
     if (!id) {
       id = (catData.label_en || '')
@@ -440,7 +539,6 @@ export const RestaurantProvider = ({ children }) => {
     if (!id) {
       id = `cat-${Date.now()}`;
     }
-    // Prevent duplicate ID
     if (categories.some((c) => c.id === id)) {
       id = `${id}-${Math.floor(Math.random() * 1000)}`;
     }
@@ -448,96 +546,82 @@ export const RestaurantProvider = ({ children }) => {
     const newCategory = {
       id,
       label_km: catData.label_km?.trim() || catData.label_en?.trim() || id,
-      label_en: catData.label_en?.trim() || catData.label_km?.trim() || id
+      label_en: catData.label_en?.trim() || catData.label_km?.trim() || id,
+      order: categories.length + 1
     };
 
     setCategories((prev) => [...prev, newCategory]);
+
+    try {
+      const res = await apiService.createCategory(newCategory);
+      if (res && res.success && res.data) {
+        setCategories((prev) => [
+          ...prev.filter(c => c.id !== id),
+          res.data
+        ]);
+        return res.data;
+      }
+    } catch (err) {
+      console.warn('[RestaurantContext] addCategory API error:', err);
+    }
     return newCategory;
   };
 
-  const updateCategory = (oldId, updatedData) => {
+  const updateCategory = async (oldId, updatedData) => {
     const newId = updatedData.id?.trim().toLowerCase() || oldId;
+    const updatedCategory = {
+      ...updatedData,
+      id: newId,
+      label_km: updatedData.label_km?.trim(),
+      label_en: updatedData.label_en?.trim()
+    };
+
     setCategories((prev) =>
-      prev.map((c) => (c.id === oldId ? { ...c, ...updatedData, id: newId } : c))
+      prev.map((c) => (c.id === oldId ? { ...c, ...updatedCategory } : c))
     );
 
-    // If category ID changed, update all dishes under this category
     if (newId !== oldId) {
       setDishes((prev) =>
         prev.map((d) => (d.category === oldId ? { ...d, category: newId } : d))
       );
     }
+
+    try {
+      await apiService.updateCategory(oldId, updatedCategory);
+    } catch (err) {
+      console.warn('[RestaurantContext] updateCategory API error:', err);
+    }
   };
 
-  const deleteCategory = (catId) => {
+  const deleteCategory = async (catId) => {
     const remaining = categories.filter((c) => c.id !== catId);
     setCategories(remaining);
-    // Find fallback category (prefer other-foods, specials, or first available)
     const fallbackId = remaining.find((c) => c.id === 'other-foods')?.id || remaining[0]?.id || 'specials';
     setDishes((prev) =>
       prev.map((d) => (d.category === catId ? { ...d, category: fallbackId } : d))
     );
-  };
 
-  // Real Customers from Database
-  const customers = useMemo(() => {
-    if (dbCustomers && dbCustomers.length > 0) {
-      return dbCustomers;
+    try {
+      await apiService.deleteCategory(catId);
+    } catch (err) {
+      console.warn('[RestaurantContext] deleteCategory API error:', err);
     }
-    const map = new Map();
-    orders.forEach((order) => {
-      const key = (order.email || (order.phone ? `phone_${order.phone}` : order.customerName) || '').trim().toLowerCase();
-      if (!key) return;
-      if (!map.has(key)) {
-        map.set(key, {
-          id: `cust-${map.size + 1}`,
-          name: order.customerName,
-          phone: order.phone,
-          email: order.email || 'N/A',
-          address: order.address || 'Phnom Penh',
-          ordersCount: 1,
-          totalSpent: Number(order.total) || 0,
-          lastOrderDate: order.createdAt,
-          orders: [order]
-        });
-      } else {
-        const existing = map.get(key);
-        existing.ordersCount += 1;
-        existing.totalSpent += Number(order.total) || 0;
-        existing.orders.push(order);
-        if (new Date(order.createdAt) > new Date(existing.lastOrderDate)) {
-          existing.lastOrderDate = order.createdAt;
-        }
-      }
-    });
-    return Array.from(map.values());
-  }, [dbCustomers, orders]);
-
-  // Export CSV helper
-  const exportOrdersToCSV = () => {
-    const headers = ['Order ID', 'Date', 'Customer Name', 'Phone', 'Order Type', 'Payment Method', 'Items Count', 'Total ($)', 'Status'];
-    const rows = orders.map((o) => [
-      o.id || o.orderId,
-      new Date(o.createdAt).toLocaleString(),
-      `"${(o.customerName || '').replace(/"/g, '""')}"`,
-      o.phone,
-      o.orderType,
-      o.paymentMethod,
-      o.items?.length || 0,
-      (Number(o.total) || 0).toFixed(2),
-      o.status
-    ]);
-
-    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `Phum_Yeung_Orders_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
+
+  // Real Customers from Database (strictly reflects real users from database, no fake guest generation)
+  const customers = useMemo(() => {
+    return Array.isArray(dbCustomers) ? dbCustomers : [];
+  }, [dbCustomers]);
+
+  // Print Orders Report helper (replaces legacy CSV download)
+  const handlePrintOrders = (customOrders = null, filterMeta = {}) => {
+    printOrdersReport({
+      orders: customOrders || orders,
+      filterMeta,
+      isKm: true
+    });
+  };
+  const exportOrdersToCSV = handlePrintOrders;
 
   // Stats
   const todayRevenue = orders
@@ -561,6 +645,7 @@ export const RestaurantProvider = ({ children }) => {
         updateOrderStatus,
         getOrderById,
         exportOrdersToCSV,
+        printOrdersReport: handlePrintOrders,
         storeSettings,
         updateStoreSettings,
         updateCategoryDiscount,

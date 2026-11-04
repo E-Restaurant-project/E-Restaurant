@@ -2601,19 +2601,8 @@ export const seedDatabase = async () => {
       console.log(`[Seed] Dishes already exist (${dishCount} found).`);
     }
 
-    // 2. Seed Admin User
-    const adminExists = await User.findOne({ email: 'admin@phumyeung.com' });
-    if (!adminExists) {
-      await User.create({
-        name: 'Phum Yeung Admin',
-        email: 'admin@phumyeung.com',
-        password: 'admin123',
-        role: 'admin'
-      });
-      console.log('[Seed] Admin user created (admin@phumyeung.com / admin123).');
-    }
-
-    // 3. Seed Promos
+    
+    // 2. Seed Promos
     const promoCount = await Promo.countDocuments();
     if (promoCount === 0) {
       await Promo.insertMany([
@@ -2624,7 +2613,7 @@ export const seedDatabase = async () => {
       console.log('[Seed] Seeded initial promo codes.');
     }
 
-    // 4. Seed Settings
+    // 3. Seed Settings
     const settingExists = await Setting.findOne();
     if (!settingExists) {
       await Setting.create({
