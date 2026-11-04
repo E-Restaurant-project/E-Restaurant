@@ -4,7 +4,6 @@ import { Navbar } from './components/common/Navbar';
 import { Footer } from './components/common/Footer';
 
 // Public Pages
-import { Home } from './pages/Home';
 import { Menu } from './pages/Menu';
 import { ItemDetail } from './pages/ItemDetail';
 import { Cart } from './pages/Cart';
@@ -50,9 +49,9 @@ export function App() {
     <>
       <ScrollToTop />
       <Routes>
-        {/* Public Customer Routes */}
+        {/* Public Customer Routes: Food List is the Homepage */}
         <Route element={<PublicLayout />}>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Menu />} />
           <Route path="/menu" element={<Menu />} />
           <Route path="/menu/:id" element={<ItemDetail />} />
           <Route path="/cart" element={<Cart />} />

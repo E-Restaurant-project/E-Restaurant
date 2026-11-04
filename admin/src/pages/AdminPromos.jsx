@@ -22,7 +22,6 @@ import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { DeleteConfirmModal } from '../components/admin/DeleteConfirmModal';
-import { CATEGORIES } from '../data/menu';
 import { getImageUrl } from '../config/api';
 import { getEffectiveDiscount, getDiscountedPrice, getDiscountedPriceKHR } from '../utils/discount';
 
@@ -47,10 +46,7 @@ export const AdminPromos = () => {
   const [activeTab, setActiveTab] = useState('category');
 
   // Categories list
-  const categoryList = (restaurantCategories && restaurantCategories.length > 0
-    ? restaurantCategories
-    : CATEGORIES
-  ).filter((c) => c.id !== 'all');
+  const categoryList = (restaurantCategories || []).filter((c) => c.id !== 'all');
 
   // Category Discounts state
   const categoryDiscounts = storeSettings?.categoryDiscounts || {};

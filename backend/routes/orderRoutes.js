@@ -6,12 +6,12 @@ import {
   updateOrderStatus,
   getMyOrders
 } from '../controllers/orderController.js';
-import { protect } from '../middleware/authMiddleware.js';
+import { protect, protectAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.route('/')
-  .get(getOrders)
+  .get(protectAdmin, getOrders)
   .post(createOrder);
 
 router.get('/my-orders', protect, getMyOrders);
@@ -20,6 +20,6 @@ router.route('/:orderId')
   .get(getOrderById);
 
 router.route('/:orderId/status')
-  .patch(protect, updateOrderStatus);
+  .patch(protectAdmin, updateOrderStatus);
 
 export default router;

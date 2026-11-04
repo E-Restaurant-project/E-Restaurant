@@ -202,3 +202,100 @@ export const sendAdmin2FAEmail = async (toEmail, code, name = 'Administrator') =
     return { success: false, realEmailSent: false, code, error: error.message };
   }
 };
+
+/**
+ * Sends a Password Reset OTP code to customer or admin Gmail
+ */
+export const sendPasswordResetEmail = async (toEmail, code, name = 'Customer') => {
+  const emailUser = process.env.EMAIL_USER?.trim();
+  const emailPass = process.env.EMAIL_PASS?.trim()?.replace(/\s+/g, '');
+
+  console.log('\n======================================================');
+  console.log('🔑 [Password Reset OTP Dispatch]');
+  console.log(`👤 Recipient: ${name} <${toEmail}>`);
+  console.log(`🔢 Reset OTP Code: [ ${code} ]`);
+  console.log('⏱️ Expiry: 10 minutes');
+  console.log('======================================================\n');
+
+  if (!emailUser || !emailPass) {
+    console.warn('⚠️ [Password Reset Warning] EMAIL_USER or EMAIL_PASS not set in backend/.env.');
+    return {
+      success: false,
+      realEmailSent: false,
+      code,
+      error: 'Gmail SMTP credentials not set in backend/.env'
+    };
+  }
+
+  try {
+    const transporter = getTransporter();
+    if (!transporter) throw new Error('No transporter');
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>កំណត់ពាក្យសម្ងាត់ឡើងវិញ - ភោជនីយដ្ឋាន ភូមិយើង</title>
+      </head>
+      <body style="margin: 0; padding: 20px; background-color: #f6f3ee; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <div style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e8e2d8;">
+          <div style="background: linear-gradient(135deg, #800020 0%, #a31c38 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
+            <div style="font-size: 42px; line-height: 1; margin-bottom: 8px;">🔐</div>
+            <h1 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 0.5px; color: #ffffff;">
+              កំណត់ពាក្យសម្ងាត់ឡើងវិញ
+            </h1>
+            <div style="font-size: 13px; color: #fdf8e6; font-weight: 600; margin-top: 4px; letter-spacing: 0.5px;">
+              Phum Yeung Restaurant • Password Reset Request
+            </div>
+          </div>
+
+          <div style="padding: 32px 28px;">
+            <p style="font-size: 16px; color: #231f1e; margin: 0 0 16px; font-weight: 600;">
+              សួស្តី <strong>${name}</strong>,
+            </p>
+            <p style="font-size: 14.5px; line-height: 1.6; color: #55514f; margin: 0 0 24px;">
+              យើងបានទទួលសំណើសុំកំណត់ពាក្យសម្ងាត់គណនីរបស់អ្នកឡើងវិញ។ សូមប្រើប្រាស់លេខកូដសម្ងាត់ OTP ៦ ខ្ទង់ខាងក្រោមនេះ ដើម្បីប្តូរពាក្យសម្ងាត់ថ្មី៖
+            </p>
+
+            <div style="background: #fdfbf7; border: 2px dashed #800020; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
+              <div style="font-size: 12px; color: #800020; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">
+                លេខកូដប្តូរពាក្យសម្ងាត់ / Password Reset Code
+              </div>
+              <div style="font-size: 36px; font-weight: 900; color: #800020; letter-spacing: 8px; font-family: monospace;">
+                ${code}
+              </div>
+              <div style="font-size: 12px; color: #8b8380; margin-top: 8px;">
+                ⏱️ មានសុពលភាពរយៈពេល <strong>១០ នាទី</strong> ប៉ុណ្ណោះ
+              </div>
+            </div>
+
+            <p style="font-size: 13px; line-height: 1.6; color: #736c69; margin: 24px 0 0; padding-top: 20px; border-top: 1px solid #f0eae1;">
+              ⚠️ <strong>ចំណាំសុវត្ថិភាព៖</strong> ប្រសិនបើអ្នកមិនបានស្នើសុំប្តូរពាក្យសម្ងាត់នេះទេ សូមកុំចែករំលែកលេខកូដនេះទៅកាន់អ្នកណាឡើយ។ គណនីរបស់អ្នកនៅតែមានសុវត្ថិភាពដដែល។
+            </p>
+          </div>
+
+          <div style="background-color: #faf7f2; padding: 18px 24px; text-align: center; font-size: 12px; color: #9c948f; border-top: 1px solid #eee8de;">
+            ភោជនីយដ្ឋាន ភូមិយើង (Phum Yeung Restaurant)<br/>
+            📍 រាជធានីភ្នំពេញ • Authentic Khmer Dining Experience
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await transporter.sendMail({
+      from: `"ភោជនីយដ្ឋាន ភូមិយើង" <${emailUser}>`,
+      to: toEmail,
+      subject: `[${code}] កូដប្តូរពាក្យសម្ងាត់គណនី - ភោជនីយដ្ឋាន ភូមិយើង (Password Reset Code)`,
+      html: htmlContent
+    });
+
+    console.log(`✅ [Real Gmail] Password reset email sent successfully to ${toEmail}`);
+    return { success: true, realEmailSent: true, code };
+  } catch (error) {
+    console.error(`❌ [Password Reset Email Error]: ${error.message}`);
+    return { success: false, realEmailSent: false, code, error: error.message };
+  }
+};

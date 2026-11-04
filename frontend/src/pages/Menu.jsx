@@ -94,21 +94,7 @@ export const Menu = () => {
   const activeCategoryObj = allCategories?.find((c) => c.id === activeCategory);
 
   return (
-    <div className="menu-page">
-      {/* Header Banner */}
-      <div style={{ backgroundColor: 'var(--color-bg-subtle)', borderBottom: '1px solid var(--color-border)', padding: 'var(--space-2xl) 0 var(--space-xl)' }}>
-        <div className="container">
-          <div className="section__header" style={{ marginBottom: 0 }}>
-            <span className="section__badge">
-              <Utensils size={14} style={{ display: 'inline', marginRight: '4px' }} />
-              {t('nav.menu')}
-            </span>
-            <h1 className="section__title">{t('menu.title')}</h1>
-            <p className="section__subtitle">{t('menu.subtitle')}</p>
-          </div>
-        </div>
-      </div>
-
+    <div className="menu-page" style={{ paddingTop: 'var(--space-xs)' }}>
       {/* Sticky Filter Controls */}
       <div className="menu-sticky-controls">
         <div className="container">

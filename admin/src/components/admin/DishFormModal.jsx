@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useRestaurant } from '../../hooks/useRestaurant';
-import { CATEGORIES } from '../../data/menu';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { CustomSelect } from '../common/CustomSelect';
@@ -20,10 +19,7 @@ export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null, init
   const { t, language } = useLanguage();
   const { categories: restaurantCategories } = useRestaurant();
   const isKm = language === 'km';
-  const categoryList =
-    restaurantCategories && restaurantCategories.length > 0
-      ? restaurantCategories
-      : CATEGORIES.filter((c) => c.id !== 'all');
+  const categoryList = restaurantCategories || [];
 
   const fileInputRef = useRef(null);
 
@@ -277,10 +273,31 @@ export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null, init
     onClose();
   };
 
+  const handleSafeClose = () => {
+    const hasData = Boolean(
+      (formData.name_km && formData.name_km.trim()) ||
+      (formData.name_en && formData.name_en.trim()) ||
+      formData.price ||
+      previewUrl ||
+      selectedFile
+    );
+
+    if (hasData && !dishToEdit) {
+      const confirmDiscard = window.confirm(
+        isKm
+          ? 'តើអ្នកពិតជាចង់ចាកចេញមែនទេ? ទិន្នន័យមុខម្ហូបដែលបានបំពេញនឹងត្រូវបាត់បង់។'
+          : 'You have unsaved dish details. Are you sure you want to close and discard?'
+      );
+      if (!confirmDiscard) return;
+    }
+    onClose();
+  };
+
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleSafeClose}
+      closeOnOverlay={false}
       title={dishToEdit ? t('admin.edit_dish') : t('admin.add_dish')}
       maxWidth="640px"
     >
@@ -701,7 +718,7 @@ export const DishFormModal = ({ isOpen, onClose, onSave, dishToEdit = null, init
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)' }}>
-          <Button variant="ghost" onClick={onClose} disabled={isUploading}>
+          <Button variant="ghost" onClick={handleSafeClose} disabled={isUploading}>
             {t('admin.cancel')}
           </Button>
           <Button variant="primary" type="submit" disabled={isUploading}>

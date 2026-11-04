@@ -93,12 +93,34 @@
 .admin-sidebar--collapsed .admin-sidebar__title,
 .admin-sidebar--collapsed .admin-sidebar__subtitle,
 .admin-sidebar--collapsed .admin-sidebar__link span {
-  display: none;
+  display: none !important;
 }
 
 .admin-sidebar--collapsed .admin-sidebar__header {
-  padding: var(--space-md) var(--space-xs);
+  padding: 14px 0;
   justify-content: center;
+  align-items: center;
+}
+
+.admin-sidebar--collapsed .admin-sidebar__brand {
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.admin-sidebar--collapsed .admin-sidebar__logo {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  max-width: 44px;
+  max-height: 44px;
+  margin: 0 auto;
+}
+
+.admin-sidebar--collapsed .admin-sidebar__brand:hover .admin-sidebar__logo {
+  transform: scale(1.08);
 }
 
 .admin-sidebar--collapsed .admin-sidebar__link {
@@ -113,20 +135,51 @@
 
 /* Sidebar Header */
 .admin-sidebar__header {
-  padding: var(--space-lg);
+  padding: 16px var(--space-md);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
   flex-shrink: 0;
+  min-height: 68px;
 }
 
 .admin-sidebar__brand {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
+  min-width: 0;
   overflow: hidden;
+}
+
+.admin-sidebar__logo {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  max-width: 42px;
+  max-height: 42px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid var(--color-primary);
+  display: block;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  transition: transform var(--transition-fast);
+}
+
+.admin-sidebar__collapse-toggle {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding-bottom: 10px !important;
+  margin-bottom: 6px !important;
+  color: #d1c8c0 !important;
+}
+
+.admin-sidebar__collapse-toggle:hover {
+  color: #fff !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 .admin-sidebar__title {

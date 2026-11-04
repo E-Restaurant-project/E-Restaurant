@@ -308,7 +308,7 @@
     "login_subtitle": "Sign in to easily manage orders, save delivery details, and get promo codes",
     "register_subtitle": "Sign up with your Gmail to order faster and track deliveries in real time",
     "full_name": "Full Name",
-    "email": "Email (Gmail)",
+    "email": "Email Address",
     "password": "Password",
     "phone": "Phone Number",
     "address": "Delivery Address",
@@ -323,7 +323,23 @@
     "resend_btn": "Resend Code",
     "code_sent": "Verification code has been sent!",
     "verified_success": "Your account has been verified successfully!",
-    "dev_hint": "Dev Code (Simulation Mode):"
+    "forgot_password": "Forgot Password?",
+    "forgot_title": "Reset Password",
+    "forgot_subtitle": "Enter your Gmail address and we will send you a 6-digit verification code",
+    "reset_title": "Set New Password",
+    "reset_subtitle": "Enter the 6-digit code sent to your email and your new password",
+    "new_password": "New Password",
+    "confirm_password": "Confirm New Password",
+    "send_code_btn": "Send Reset Code",
+    "reset_btn": "Reset Password",
+    "back_to_login": "Back to Sign In",
+    "passwords_not_match": "Passwords do not match. Please verify and try again.",
+    "password_min_length": "Password must be at least 6 characters long",
+    "password_reset_success": "Password has been reset successfully! Please sign in with your new password.",
+    "reset_code_sent": "Reset code has been sent to your email!",
+    "continue_with_google": "Continue with Google",
+    "or_continue_with": "OR",
+    "fullname": "Full Name"
   },
   "account": {
     "title": "My Account",
@@ -355,5 +371,12 @@
     "not_found_title": "Page Not Found (404)",
     "not_found_desc": "The page you are looking for may have been moved, deleted, or does not exist.",
     "back_home": "Back to Home"
+  },
+  "filter": {
+    "all_spice": "All Spice Levels",
+    "not_spicy": "Non-Spicy",
+    "mild": "Mild",
+    "medium": "Medium",
+    "hot": "Hot"
   }
 }

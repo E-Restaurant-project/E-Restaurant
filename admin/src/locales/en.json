@@ -274,7 +274,7 @@
     "action": "Action",
     "popular_items": "Best-Selling Dishes",
     "recent_orders": "Live Incoming Orders",
-    "export_csv": "Export CSV Report",
+    "export_csv": "Print Report",
     "category_sales": "Sales by Category",
     "promos_title": "Promo Codes & Vouchers Management",
     "add_promo": "Create New Promo Code",
@@ -299,7 +299,19 @@
     "settings_banner_active": "Display Top Announcement Banner",
     "settings_banner_text_km": "Announcement Text (Khmer)",
     "settings_banner_text_en": "Announcement Text (English)",
-    "settings_saved": "Store settings saved successfully!"
+    "settings_saved": "Store settings saved successfully!",
+    "collapse_sidebar": "Collapse Sidebar",
+    "expand_sidebar": "Expand Sidebar",
+    "nav_profile": "Admin Profile",
+    "print_report": "Print Report",
+    "order_id": "Order ID",
+    "order_customer": "Customer",
+    "order_destination": "Delivery Address",
+    "order_total": "Total Amount",
+    "order_status": "Status",
+    "view_all_orders": "View All Orders",
+    "sales_by_category": "Sales by Category",
+    "popular_dishes": "Top Selling Dishes"
   },
   "footer": {
     "desc": "Phum Yeung Restaurant serves authentic Cambodian cuisine freshly prepared and delivered hot to your doorstep.",
@@ -328,8 +340,7 @@
     "verify_btn": "Verify & Continue",
     "resend_btn": "Resend Code",
     "code_sent": "Verification code has been sent!",
-    "verified_success": "Your account has been verified successfully!",
-    "dev_hint": "Dev Code (Simulation Mode):"
+    "verified_success": "Your account has been verified successfully!"
   },
   "account": {
     "title": "My Account",

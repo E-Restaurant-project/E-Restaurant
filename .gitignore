@@ -33,3 +33,7 @@ Thumbs.db
 # Coverage / Testing
 coverage/
 *.lcov
+
+# Local Raw Assets
+ALL FOOD/
+ALL FOOD

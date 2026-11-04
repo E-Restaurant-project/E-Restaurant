@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-  // Step 1: Verify admin credentials & trigger 2FA
+  // Step 1: Verify admin credentials & trigger 2FA if enabled
   const login = async (email, password) => {
     setLoading(true);
     const res = await apiService.login(email, password);
@@ -35,7 +35,6 @@ export const AuthProvider = ({ children }) => {
         success: true,
         requires2FA: true,
         email: res.email || email,
-        devCode: res.devCode,
         message: res.message
       };
     }
@@ -67,14 +66,25 @@ export const AuthProvider = ({ children }) => {
     return await apiService.resend2FA(email);
   };
 
-  // Get 2FA QR Code & Secret Key for Google Authenticator
-  const get2FASetup = async (email) => {
-    return await apiService.get2FASetup(email);
-  };
+  // Update Admin Profile (name, phone, address, avatar, password)
+  const updateProfile = async (profileData) => {
+    setLoading(true);
+    const res = await apiService.updateProfile(profileData);
+    setLoading(false);
 
-  // Reset 2FA Secret Key & QR Code
-  const reset2FA = async (email) => {
-    return await apiService.reset2FA(email);
+    if (res.success && res.data) {
+      setUser((prev) => ({
+        ...prev,
+        ...res.data,
+        name: res.data.name || prev?.name,
+        email: res.data.email || prev?.email,
+        phone: res.data.phone !== undefined ? res.data.phone : prev?.phone,
+        address: res.data.address !== undefined ? res.data.address : prev?.address,
+        avatar: res.data.avatar !== undefined ? res.data.avatar : prev?.avatar
+      }));
+      return { success: true, data: res.data };
+    }
+    return { success: false, error: res.error || res.message || 'Failed to update profile' };
   };
 
   const logout = () => {
@@ -92,8 +102,7 @@ export const AuthProvider = ({ children }) => {
         login,
         verify2FA,
         resend2FA,
-        get2FASetup,
-        reset2FA,
+        updateProfile,
         logout,
         isAdmin,
         isAuthenticated: !!user

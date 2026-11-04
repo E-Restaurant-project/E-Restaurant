@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Phone, Mail, Clock, Heart, Truck } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, Heart, Truck, Utensils } from 'lucide-react';
 import { useLanguage } from '../../hooks/useLanguage';
 
 export const Footer = () => {
@@ -37,8 +37,7 @@ export const Footer = () => {
           <div className="footer__col">
             <h4 className="footer__title">{t('footer.quick_links')}</h4>
             <ul className="footer__links">
-              <li><Link to="/">{t('nav.home')}</Link></li>
-              <li><Link to="/menu">{t('nav.menu')}</Link></li>
+              <li><Link to="/">{t('nav.menu')}</Link></li>
               <li><Link to="/track-order">{t('nav.track_order')}</Link></li>
               <li><Link to="/about">{t('nav.about')}</Link></li>
               <li><Link to="/contact">{t('nav.contact')}</Link></li>
