@@ -71,11 +71,15 @@ export const ORDER_STATUS_CONFIG = {
 };
 
 export const OrderStatusDropdown = ({
-  status = 'pending',
+  status,
+  currentStatus,
   onChange,
+  onStatusChange,
   disabled = false,
   size = 'sm'
 }) => {
+  const effectiveStatus = status || currentStatus || 'pending';
+  const effectiveOnChange = onChange || onStatusChange;
   const { language } = useLanguage();
   const isKm = language === 'km';
   const [isOpen, setIsOpen] = useState(false);
@@ -83,7 +87,7 @@ export const OrderStatusDropdown = ({
   const triggerRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  const currentConfig = ORDER_STATUS_CONFIG[status] || ORDER_STATUS_CONFIG.pending;
+  const currentConfig = ORDER_STATUS_CONFIG[effectiveStatus] || ORDER_STATUS_CONFIG.pending;
   const CurrentIcon = currentConfig.icon;
 
   // Compute fixed position relative to viewport so it floats above all table overflow boundaries
@@ -154,8 +158,8 @@ export const OrderStatusDropdown = ({
   }, [isOpen]);
 
   const handleSelect = (statusKey) => {
-    if (statusKey !== status && typeof onChange === 'function') {
-      onChange(statusKey);
+    if (statusKey !== effectiveStatus && typeof effectiveOnChange === 'function') {
+      effectiveOnChange(statusKey);
     }
     setIsOpen(false);
   };
@@ -282,7 +286,7 @@ export const OrderStatusDropdown = ({
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
               {statusList.map((cfg) => {
-                const isSelected = cfg.id === status;
+                const isSelected = cfg.id === effectiveStatus;
                 const Icon = cfg.icon;
 
                 return (
