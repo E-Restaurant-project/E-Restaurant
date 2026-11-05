@@ -29,7 +29,7 @@ import { useToast } from '../hooks/useToast';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
 import { OrderStatusDropdown, ORDER_STATUS_CONFIG } from '../components/admin/OrderStatusDropdown';
-import { printOrdersReport } from '../utils/printReport';
+import { printOrdersReport, printSingleInvoice } from '../utils/printReport';
 import { PrintReportModal } from '../components/admin/PrintReportModal';
 
 export const AdminOrders = () => {
@@ -156,7 +156,11 @@ export const AdminOrders = () => {
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      await updateOrderStatus(orderId, newStatus);
+      const adminName = user?.name || user?.username || user?.email || (isKm ? 'អ្នកគ្រប់គ្រង' : 'Admin');
+      const updated = await updateOrderStatus(orderId, newStatus, adminName);
+      if (selectedOrder && (selectedOrder.id === orderId || selectedOrder.orderId === orderId)) {
+        setSelectedOrder((prev) => (updated ? { ...prev, ...updated } : { ...prev, status: newStatus }));
+      }
       const statusObj = ORDER_STATUS_CONFIG[newStatus];
       const statusLabel = isKm ? statusObj?.label_km || newStatus : statusObj?.label_en || newStatus;
       showToast(
@@ -474,8 +478,12 @@ export const AdminOrders = () => {
                         </td>
 
                         {/* Order ID */}
-                        <td>
-                          <div style={{ fontWeight: 700, color: 'var(--color-primary)', fontSize: '0.92rem' }}>
+                        <td
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => setSelectedOrder(order)}
+                          title={isKm ? 'ចុចដើម្បីបើកវិក្កយបត្រលម្អិត' : 'Click to open invoice'}
+                        >
+                          <div style={{ fontWeight: 800, color: 'var(--color-primary)', fontSize: '0.94rem', textDecoration: 'underline' }}>
                             #{order.id}
                           </div>
                           {order.createdAt && (
@@ -487,26 +495,28 @@ export const AdminOrders = () => {
                         </td>
 
                         {/* Customer Info */}
-                        <td>
-                          <div style={{ fontWeight: 600, color: 'var(--color-text-main)' }}>
+                        <td
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => setSelectedOrder(order)}
+                          title={isKm ? 'ចុចដើម្បីបើកវិក្កយបត្រលម្អិត' : 'Click to open invoice'}
+                        >
+                          <div style={{ fontWeight: 700, color: 'var(--color-text-main)' }}>
                             {order.customerName || 'Customer'}
                           </div>
                           {order.phone && (
-                            <a
-                              href={`tel:${order.phone}`}
+                            <div
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '4px',
                                 fontSize: '0.8rem',
-                                color: 'var(--color-primary)',
-                                textDecoration: 'none',
+                                color: 'var(--color-text-muted)',
                                 marginTop: '2px'
                               }}
                             >
                               <Phone size={11} />
                               <span>{order.phone}</span>
-                            </a>
+                            </div>
                           )}
                         </td>
 
@@ -585,48 +595,190 @@ export const AdminOrders = () => {
           preSelectedOrderIds={selectedOrderIds}
         />
 
-        {/* View Order Detail Modal */}
+        {/* View Order Detail & Printable Invoice Modal */}
         {selectedOrder && (
           <Modal
             isOpen={Boolean(selectedOrder)}
             onClose={() => setSelectedOrder(null)}
-            title={isKm ? `ព័ត៌មានលម្អិតការកុម្ម៉ង់ #${selectedOrder.id}` : `Order Details #${selectedOrder.id}`}
-            maxWidth="680px"
+            title={isKm ? `វិក្កយបត្រការកុម្ម៉ង់ #${selectedOrder.id}` : `Order Invoice #${selectedOrder.id}`}
+            maxWidth="700px"
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: '#f8fafc', padding: '12px', borderRadius: '10px' }}>
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{isKm ? 'អតិថិជន:' : 'Customer:'}</div>
-                  <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{selectedOrder.customerName}</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--color-primary)' }}>{selectedOrder.phone}</div>
+              {/* Receipt Header Card */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <img
+                    src="/phum_yeung_logo.jpg"
+                    alt="Phum Yeung"
+                    style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-primary)' }}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-primary-dark)' }}>
+                      ភោជនីយដ្ឋាន ភូមិយើង
+                    </h3>
+                    <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>PHUM YEUNG RESTAURANT</div>
+                  </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{isKm ? 'ទីតាំងដឹកជញ្ជូន:' : 'Destination:'}</div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{selectedOrder.address}</div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ display: 'inline-block', backgroundColor: 'var(--color-primary)', color: '#fff', fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '4px' }}>
+                    {isKm ? 'វិក្កយបត្រផ្លូវការ' : 'OFFICIAL INVOICE'}
+                  </div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
+                    #{selectedOrder.id}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    {selectedOrder.createdAt ? new Date(selectedOrder.createdAt).toLocaleString(isKm ? 'km-KH' : 'en-US') : ''}
+                  </div>
                 </div>
               </div>
 
+              {/* Meta Grid (Customer, Admin Sale, Payment, Delivery) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#ffffff', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.88rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>{isKm ? 'អតិថិជន:' : 'Customer:'}</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a' }}>{selectedOrder.customerName || 'N/A'}</div>
+                  <div style={{ fontSize: '0.82rem', color: '#64748b' }}>{selectedOrder.phone || 'N/A'}</div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>{isKm ? 'អ្នកលក់ / បេឡាករ (Admin Sale):' : 'Admin Sale / Cashier:'}</div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', padding: '2px 8px', borderRadius: '6px', fontWeight: 700, fontSize: '0.88rem', marginTop: '2px' }}>
+                    <User size={14} />
+                    <span>{selectedOrder.adminSale || selectedOrder.lastUpdatedBy || user?.name || user?.username || 'Admin'}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>{isKm ? 'វិធីសាស្ត្រទូទាត់:' : 'Payment:'}</div>
+                  <div style={{ fontWeight: 700, color: '#15803d', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                    <CreditCard size={14} />
+                    <span>Bakong KHQR (PAID)</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>{isKm ? 'ស្ថានភាពបច្ចុប្បន្ន:' : 'Status:'}</div>
+                  <div style={{ marginTop: '2px' }}>
+                    <OrderStatusDropdown
+                      currentStatus={selectedOrder.status}
+                      onStatusChange={(newStatus) => handleStatusChange(selectedOrder.id, newStatus)}
+                      disabled={selectedOrder.status === 'cancelled'}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ gridColumn: 'span 2', borderTop: '1px dashed #e2e8f0', paddingTop: '8px' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>{isKm ? 'អាសយដ្ឋានដឹកជញ្ជូន:' : 'Delivery Destination:'}</div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>
+                    {selectedOrder.address || 'Central Kitchen Pickup'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Order Items Table */}
               <div>
-                <h4 style={{ fontSize: '0.9rem', marginBottom: '8px' }}>{isKm ? 'មុខម្ហូបដែលបានកុម្ម៉ង់' : 'Order Items'}:</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {selectedOrder.items?.map((it, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.88rem' }}>
-                      <div>
-                        <strong>{it.name || it.name_km}</strong> × {it.quantity}
-                      </div>
-                      <div style={{ fontWeight: 700 }}>
-                        ${((Number(it.price) || 0) * (it.quantity || 1)).toFixed(2)}
-                      </div>
-                    </div>
-                  ))}
+                <h4 style={{ fontSize: '0.9rem', marginBottom: '8px', color: '#334155' }}>
+                  {isKm ? 'មុខម្ហូបដែលបានកុម្ម៉ង់' : 'Order Items'} ({selectedOrder.items?.length || 0}):
+                </h4>
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                        <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 700 }}>{isKm ? 'មុខម្ហូប' : 'Item'}</th>
+                        <th style={{ padding: '8px 12px', textAlign: 'center', width: '60px', fontWeight: 700 }}>{isKm ? 'ចំនួន' : 'Qty'}</th>
+                        <th style={{ padding: '8px 12px', textAlign: 'right', width: '90px', fontWeight: 700 }}>{isKm ? 'តម្លៃ' : 'Price'}</th>
+                        <th style={{ padding: '8px 12px', textAlign: 'right', width: '100px', fontWeight: 700 }}>{isKm ? 'សរុប' : 'Total'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedOrder.items?.map((it, idx) => (
+                        <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '8px 12px', fontWeight: 600 }}>{it.name || it.name_km || it.name_en || 'Food Item'}</td>
+                          <td style={{ padding: '8px 12px', textAlign: 'center' }}>{it.quantity || 1}</td>
+                          <td style={{ padding: '8px 12px', textAlign: 'right' }}>${Number(it.price || 0).toFixed(2)}</td>
+                          <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700 }}>
+                            ${((Number(it.price) || 0) * (it.quantity || 1)).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: '2px solid #e2e8f0' }}>
-                <span style={{ fontWeight: 700 }}>{isKm ? 'សរុបចុងក្រោយ:' : 'Grand Total:'}</span>
-                <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                  ${Number(selectedOrder.total || 0).toFixed(2)} ({Number(selectedOrder.totalKhr || (selectedOrder.total * 4100)).toLocaleString()} ៛)
-                </span>
+              {/* Financial Totals */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginLeft: 'auto', width: '280px', fontSize: '0.88rem' }}>
+                {Number(selectedOrder.subtotal || 0) > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
+                    <span>{isKm ? 'សរុបដើម:' : 'Subtotal:'}</span>
+                    <span>${Number(selectedOrder.subtotal).toFixed(2)}</span>
+                  </div>
+                )}
+                {Number(selectedOrder.deliveryFee || 0) > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
+                    <span>{isKm ? 'ថ្លៃដឹកជញ្ជូន:' : 'Delivery Fee:'}</span>
+                    <span>${Number(selectedOrder.deliveryFee).toFixed(2)}</span>
+                  </div>
+                )}
+                {Number(selectedOrder.discount || 0) > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: 600 }}>
+                    <span>{isKm ? 'បញ្ចុះតម្លៃ:' : 'Discount:'}</span>
+                    <span>-${Number(selectedOrder.discount).toFixed(2)}</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '2px solid #e2e8f0' }}>
+                  <span style={{ fontWeight: 800 }}>{isKm ? 'សរុបចុងក្រោយ:' : 'Grand Total:'}</span>
+                  <span style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                    ${Number(selectedOrder.total || 0).toFixed(2)} ({Number(selectedOrder.totalKhr || (selectedOrder.total * 4100)).toLocaleString()} ៛)
+                  </span>
+                </div>
+              </div>
+
+              {/* Admin Activity Logs Block */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#334155', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Clock size={14} />
+                  <span>{isKm ? 'ប្រវត្តិសកម្មភាពរបស់អ្នកគ្រប់គ្រង (Admin Activity Logs)' : 'Admin Activity Logs'}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '140px', overflowY: 'auto' }}>
+                  {Array.isArray(selectedOrder.activityLogs) && selectedOrder.activityLogs.length > 0 ? (
+                    selectedOrder.activityLogs.map((log, idx) => (
+                      <div key={idx} style={{ fontSize: '0.8rem', padding: '6px 8px', background: '#ffffff', borderRadius: '6px', border: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <strong style={{ color: 'var(--color-primary)' }}>{log.adminName || 'Admin'}:</strong>{' '}
+                          <span style={{ color: '#334155' }}>{log.description || log.action}</span>
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: '#94a3b8', flexShrink: 0, marginLeft: '8px' }}>
+                          {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic' }}>
+                      {isKm ? 'ការកុម្ម៉ង់ត្រូវបានបង្កើត និងគ្រប់គ្រងដោយ' : 'Order created & managed by'}{' '}
+                      <strong>{selectedOrder.adminSale || user?.name || 'Admin'}</strong>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', paddingTop: '8px' }}>
+                <Button
+                  variant="outline"
+                  onClick={() => printSingleInvoice({ order: selectedOrder, adminUser: user, isKm })}
+                  icon={<Printer size={16} />}
+                >
+                  {isKm ? 'បោះពុម្ពវិក្កយបត្រ' : 'Print Invoice'}
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => setSelectedOrder(null)}
+                >
+                  {isKm ? 'បិទ' : 'Close'}
+                </Button>
               </div>
             </div>
           </Modal>

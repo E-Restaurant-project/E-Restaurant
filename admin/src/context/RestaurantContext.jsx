@@ -435,12 +435,23 @@ export const RestaurantProvider = ({ children }) => {
     return newOrder;
   };
 
-  const updateOrderStatus = async (orderId, newStatus) => {
-    setOrders((prev) =>
-      prev.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order))
-    );
+  const updateOrderStatus = async (orderId, newStatus, adminName) => {
     // Call Node.js API
-    apiService.updateOrderStatus(orderId, newStatus);
+    try {
+      const res = await apiService.updateOrderStatus(orderId, newStatus, adminName);
+      if (res?.success && res.data) {
+        const updated = { ...res.data, id: res.data.orderId || res.data._id };
+        setOrders((prev) =>
+          prev.map((order) => (order.id === orderId || order.orderId === orderId ? { ...order, ...updated } : order))
+        );
+        return updated;
+      }
+    } catch (_) {}
+
+    // Optimistic fallback
+    setOrders((prev) =>
+      prev.map((order) => (order.id === orderId || order.orderId === orderId ? { ...order, status: newStatus } : order))
+    );
   };
 
   const getOrderById = (orderId) => {

@@ -100,8 +100,8 @@ export const apiService = {
   // Orders Management
   getOrders: async () => request('/orders'),
   getOrder: async (orderId) => request(`/orders/${orderId}`),
-  updateOrderStatus: async (orderId, status) =>
-    request(`/orders/${orderId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  updateOrderStatus: async (orderId, status, adminName) =>
+    request(`/orders/${orderId}/status`, { method: 'PATCH', body: JSON.stringify({ status, adminName }) }),
 
   // Promos Management
   getPromos: async () => request('/promos'),

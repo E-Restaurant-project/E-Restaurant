@@ -40,7 +40,19 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: ['pending', 'preparing', 'delivering', 'completed', 'cancelled'],
       default: 'pending'
-    }
+    },
+    adminSale: { type: String, default: '' },
+    lastUpdatedBy: { type: String, default: '' },
+    activityLogs: [
+      {
+        adminId: { type: String, default: '' },
+        adminName: { type: String, default: '' },
+        adminEmail: { type: String, default: '' },
+        action: { type: String, default: 'STATUS_UPDATE' },
+        description: { type: String, default: '' },
+        timestamp: { type: Date, default: Date.now }
+      }
+    ]
   },
   { timestamps: true }
 );

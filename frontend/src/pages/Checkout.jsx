@@ -696,34 +696,21 @@ export const Checkout = () => {
                 <span>{t('checkout.payment_method')}</span>
               </h3>
 
-              <div className="payment-method-selector">
+              <div className="payment-method-selector" style={{ gridTemplateColumns: '1fr' }}>
                 <div
-                  className={`payment-option ${paymentMethod === 'khqr' ? 'payment-option--active' : ''}`}
-                  onClick={() => setPaymentMethod('khqr')}
+                  className="payment-option payment-option--active"
+                  style={{ cursor: 'default' }}
                 >
-                  <QrCode size={24} color="#e11938" />
-                  <div>
-                    <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span>{t('checkout.payment_khqr')}</span>
-                      <span style={{ backgroundColor: '#e11938', color: '#fff', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                  <QrCode size={26} color="#e11938" />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                      <span style={{ fontSize: '0.98rem' }}>{t('checkout.payment_khqr')}</span>
+                      <span style={{ backgroundColor: '#e11938', color: '#fff', fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', fontWeight: 800 }}>
                         BAKONG KHQR
                       </span>
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                      ABA, ACLEDA, Wing & all Cambodian Banks
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className={`payment-option ${paymentMethod === 'cod' ? 'payment-option--active' : ''}`}
-                  onClick={() => setPaymentMethod('cod')}
-                >
-                  <Banknote size={24} color="var(--color-primary)" />
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{t('checkout.payment_cod')}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                      Pay driver upon receiving food
+                    <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                      {isKm ? 'ស្កេនទូទាត់ភ្លាមៗជាមួយ ABA, ACLEDA, Wing និងគ្រប់ធនាគារនៅកម្ពុជា' : 'Scan & pay instantly with ABA, ACLEDA, Wing & all Cambodian bank apps'}
                     </div>
                   </div>
                 </div>

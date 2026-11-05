@@ -127,22 +127,55 @@ export const createOrder = async (req, res) => {
   }
 };
 
-// @desc    Update order status
+// @desc    Update order status & record admin audit log
 // @route   PATCH /api/orders/:orderId/status
 export const updateOrderStatus = async (req, res) => {
   try {
-    const cleanId = req.params.orderId.trim().toUpperCase();
-    const { status } = req.body;
+    const rawId = (req.params.orderId || '').trim();
+    const cleanId = rawId.toUpperCase();
+    const { status, adminName } = req.body;
 
-    const order = await Order.findOneAndUpdate(
-      { orderId: cleanId },
-      { status },
-      { new: true, runValidators: true }
-    );
+    const actingAdminName = adminName || req.user?.name || req.user?.username || req.user?.email || 'Admin';
+    const actingAdminEmail = req.user?.email || '';
+    const actingAdminId = req.user?._id?.toString() || '';
 
-    if (!order) {
+    const query = {
+      $or: [
+        { orderId: cleanId },
+        { order_id: cleanId },
+        { orderId: rawId },
+        ...(mongoose.Types.ObjectId.isValid(rawId) ? [{ _id: rawId }] : [])
+      ]
+    };
+
+    const existingOrder = await Order.findOne(query);
+    if (!existingOrder) {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
+
+    const previousStatus = existingOrder.status;
+
+    // Create Activity Log Entry
+    const logEntry = {
+      adminId: actingAdminId,
+      adminName: actingAdminName,
+      adminEmail: actingAdminEmail,
+      action: 'STATUS_UPDATE',
+      description: `ប្តូរស្ថានភាពពី "${previousStatus}" ទៅជា "${status}" ដោយ ${actingAdminName}`,
+      timestamp: new Date()
+    };
+
+    existingOrder.status = status;
+    existingOrder.lastUpdatedBy = actingAdminName;
+    if (!existingOrder.adminSale) {
+      existingOrder.adminSale = actingAdminName;
+    }
+    if (!Array.isArray(existingOrder.activityLogs)) {
+      existingOrder.activityLogs = [];
+    }
+    existingOrder.activityLogs.unshift(logEntry);
+
+    const savedOrder = await existingOrder.save();
 
     // Synchronize Payment status if order completed or cancelled
     try {
@@ -153,7 +186,7 @@ export const updateOrderStatus = async (req, res) => {
       }
     } catch (_) {}
 
-    res.json({ success: true, data: order });
+    res.json({ success: true, data: savedOrder });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
