@@ -229,15 +229,6 @@ export const AdminMenu = () => {
           >
             {isKm ? 'ប្រវត្តិ Admin ទាំងអស់' : 'All Admin Audit Logs'}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            icon={<RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />}
-          >
-            {isKm ? 'ទាញយកទិន្នន័យថ្មី' : 'Sync Menu'}
-          </Button>
           <Button variant="primary" size="sm" onClick={handleOpenAdd} icon={<Plus size={16} />}>
             {t('admin.add_dish')}
           </Button>

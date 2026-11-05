@@ -7,7 +7,7 @@ import { Button } from '../components/common/Button';
 
 export const AdminSettings = () => {
   const { t, language } = useLanguage();
-  const { storeSettings, updateStoreSettings } = useRestaurant();
+  const { storeSettings, updateStoreSettings, promoCodes = [] } = useRestaurant();
   const { showToast } = useToast();
   const isKm = language === 'km';
 
@@ -141,12 +141,51 @@ export const AdminSettings = () => {
                   id="banner_toggle"
                   checked={settings.announcement.active}
                   onChange={(e) => handleAnnouncementChange('active', e.target.checked)}
-                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--color-primary, #881337)' }}
                 />
                 <label htmlFor="banner_toggle" style={{ fontWeight: 600, cursor: 'pointer' }}>
                   {t('admin.settings_banner_active')}
                 </label>
               </div>
+
+              {/* Quick Fill from Active Promo Codes */}
+              {promoCodes.length > 0 && (
+                <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '14px' }}>
+                  <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600, marginBottom: '6px' }}>
+                    {isKm ? '⚡ ចុចជ្រើសរើសកូដប្រូម៉ូសិនដើម្បីបំពេញលើ Banner ដោយស្វ័យប្រវត្តិ:' : '⚡ Quick-fill from Active Promo Codes:'}
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {promoCodes.filter(p => p.active !== false).map(p => (
+                      <button
+                        type="button"
+                        key={p.id || p.code}
+                        onClick={() => {
+                          handleAnnouncementChange('text_km', `ប្រើប្រាស់កូដប៊ូន ${p.code} ដើម្បីទទួលបានការបញ្ចុះតម្លៃ ${p.discount}% គ្រប់មុខទំនិញទាំងអស់`);
+                          handleAnnouncementChange('text_en', `Use coupon ${p.code} to get a ${p.discount}% discount on all items.`);
+                          handleAnnouncementChange('active', true);
+                          showToast(isKm ? `បានជ្រើសរើសកូដ ${p.code} (-${p.discount}%)` : `Selected ${p.code} (-${p.discount}%)`, 'info');
+                        }}
+                        style={{
+                          padding: '3px 9px',
+                          borderRadius: '6px',
+                          border: '1px solid #cbd5e1',
+                          backgroundColor: '#ffffff',
+                          color: 'var(--color-primary, #881337)',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <span>🏷️ {p.code}</span>
+                        <span style={{ color: '#16a34a' }}>(-{p.discount}%)</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="form-group">
                 <label className="form-label">{t('admin.settings_banner_text_km')}</label>

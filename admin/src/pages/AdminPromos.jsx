@@ -12,7 +12,9 @@ import {
   Sparkles,
   Flame,
   Check,
-  RefreshCw
+  RefreshCw,
+  Edit2,
+  Megaphone
 } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useRestaurant } from '../hooks/useRestaurant';
@@ -33,6 +35,7 @@ export const AdminPromos = () => {
     updatePromoCode,
     deletePromoCode,
     storeSettings,
+    updateStoreSettings,
     updateCategoryDiscount,
     updateDishDiscount,
     dishes,
@@ -57,6 +60,8 @@ export const AdminPromos = () => {
 
   // Promo Code Modal & Form State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [promoToEdit, setPromoToEdit] = useState(null);
   const [promoToDelete, setPromoToDelete] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [newCode, setNewCode] = useState('');
@@ -130,6 +135,72 @@ export const AdminPromos = () => {
     setNewCode('');
     setNewDesc('');
     setError('');
+  };
+
+  // Open Edit Promo Modal
+  const handleOpenEdit = (promo) => {
+    setPromoToEdit(promo);
+    setNewCode(promo.code || '');
+    setNewDiscount(String(promo.discount || '15'));
+    setNewDesc(promo.description || '');
+    setIsActive(promo.active !== false);
+    setError('');
+    setIsEditModalOpen(true);
+  };
+
+  // Submit Edit Promo
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!newCode.trim()) {
+      setError(t('checkout.validation_required'));
+      return;
+    }
+    const discountVal = Number(newDiscount);
+    if (isNaN(discountVal) || discountVal <= 0 || discountVal > 100) {
+      setError('Please enter a valid discount between 1% and 100%');
+      return;
+    }
+
+    const targetId = promoToEdit?.id || promoToEdit?._id || promoToEdit?.code;
+    await updatePromoCode(targetId, {
+      code: newCode.trim().toUpperCase(),
+      discount: discountVal,
+      description: newDesc.trim(),
+      active: isActive
+    });
+
+    showToast(
+      isKm
+        ? `បានកែសម្រួលកូដ ${newCode.toUpperCase()} (${discountVal}%) ជោគជ័យ!`
+        : `Promo code ${newCode.toUpperCase()} updated to ${discountVal}% successfully!`,
+      'success'
+    );
+    setIsEditModalOpen(false);
+    setPromoToEdit(null);
+  };
+
+  // 1-Click Feature on Top Announcement Banner
+  const handleFeatureOnBanner = async (promo) => {
+    try {
+      const bannerKm = `ប្រើប្រាស់កូដប៊ូន ${promo.code} ដើម្បីទទួលបានការបញ្ចុះតម្លៃ ${promo.discount}% គ្រប់មុខទំនិញទាំងអស់`;
+      const bannerEn = `Use coupon ${promo.code} to get a ${promo.discount}% discount on all items.`;
+      await updateStoreSettings({
+        ...storeSettings,
+        announcement: {
+          active: true,
+          text_km: bannerKm,
+          text_en: bannerEn
+        }
+      });
+      showToast(
+        isKm
+          ? `បានដាក់ផ្សាយកូដ ${promo.code} (-${promo.discount}%) លើរបារប្រកាសជោគជ័យ!`
+          : `Featured ${promo.code} (-${promo.discount}%) on Announcement Banner!`,
+        'success'
+      );
+    } catch (_) {
+      showToast(isKm ? 'មិនអាចដាក់ផ្សាយបានទេ' : 'Failed to update banner', 'error');
+    }
   };
 
   const handleToggleActive = (promo) => {
@@ -695,15 +766,39 @@ export const AdminPromos = () => {
                         </button>
                       </td>
                       <td>
-                        <button
-                          type="button"
-                          className="btn btn--ghost btn--sm"
-                          onClick={() => handleDelete(p)}
-                          style={{ color: 'var(--color-danger)' }}
-                          title="Delete code"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <button
+                            type="button"
+                            className="btn btn--outline btn--sm"
+                            onClick={() => handleOpenEdit(p)}
+                            style={{ fontSize: '0.75rem', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            title={isKm ? 'កែប្រែ % ឬកូដ' : 'Edit discount % or code'}
+                          >
+                            <Edit2 size={13} />
+                            <span>{isKm ? 'កែប្រែ' : 'Edit'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => handleFeatureOnBanner(p)}
+                            style={{ fontSize: '0.75rem', padding: '4px 8px', color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            title={isKm ? 'ដាក់បង្ហាញលើរបារប្រកាសលើកំពូលគេហទំព័រ' : 'Display this promo on announcement banner'}
+                          >
+                            <Megaphone size={14} />
+                            <span>{isKm ? 'ដាក់លើ Banner' : 'To Banner'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => handleDelete(p)}
+                            style={{ color: 'var(--color-danger)' }}
+                            title="Delete code"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -787,6 +882,96 @@ export const AdminPromos = () => {
             </Button>
             <Button variant="primary" type="submit">
               {t('admin.save')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Promo Code Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setPromoToEdit(null);
+        }}
+        title={isKm ? `កែសម្រួលកូដប្រូម៉ូសិន (${promoToEdit?.code || ''})` : `Edit Promo Code (${promoToEdit?.code || ''})`}
+        maxWidth="480px"
+      >
+        <form onSubmit={handleEditSubmit}>
+          {error && (
+            <div style={{ backgroundColor: '#ffebee', color: 'var(--color-danger)', padding: '8px 12px', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-md)', fontSize: '0.85rem' }}>
+              {error}
+            </div>
+          )}
+
+          <div className="form-group">
+            <label className="form-label form-label--required">{t('admin.promo_code')}</label>
+            <input
+              type="text"
+              className="form-input"
+              value={newCode}
+              onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+              placeholder="e.g. VIP40"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label form-label--required">{t('admin.promo_discount')} (%)</label>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                className="form-input"
+                value={newDiscount}
+                onChange={(e) => setNewDiscount(e.target.value)}
+                placeholder="40"
+                required
+              />
+              <span style={{ position: 'absolute', right: '12px', color: 'var(--color-text-muted)', fontWeight: 700 }}>%</span>
+            </div>
+            <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
+              {isKm ? 'អ្នកអាចប្តូរពី 30% ទៅ 40% ឬភាគរយណាមួយដែលចង់បាន' : 'You can change from 30% to 40% or any percentage'}
+            </span>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Description</label>
+            <input
+              type="text"
+              className="form-input"
+              value={newDesc}
+              onChange={(e) => setNewDesc(e.target.value)}
+              placeholder="e.g. 40% OFF Special VIP Deal"
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--space-lg)' }}>
+            <input
+              type="checkbox"
+              id="edit_promo_active"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--color-primary, #881337)' }}
+            />
+            <label htmlFor="edit_promo_active" style={{ cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>
+              {t('admin.promo_active')}
+            </label>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)' }}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setIsEditModalOpen(false);
+                setPromoToEdit(null);
+              }}
+            >
+              {t('admin.cancel')}
+            </Button>
+            <Button variant="primary" type="submit">
+              {isKm ? 'រក្សាទុកការកែប្រែ' : 'Update Code'}
             </Button>
           </div>
         </form>

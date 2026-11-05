@@ -49,7 +49,12 @@ export const createPromo = async (req, res) => {
 // @route   PUT /api/promos/:id
 export const updatePromo = async (req, res) => {
   try {
-    const promo = await Promo.findByIdAndUpdate(req.params.id, req.body, {
+    const rawId = req.params.id;
+    const query = mongoose.Types.ObjectId.isValid(rawId)
+      ? { $or: [{ _id: rawId }, { code: String(rawId).toUpperCase() }] }
+      : { code: String(rawId).toUpperCase() };
+
+    const promo = await Promo.findOneAndUpdate(query, req.body, {
       new: true,
       runValidators: true
     });
@@ -66,7 +71,12 @@ export const updatePromo = async (req, res) => {
 // @route   DELETE /api/promos/:id
 export const deletePromo = async (req, res) => {
   try {
-    const promo = await Promo.findByIdAndDelete(req.params.id);
+    const rawId = req.params.id;
+    const query = mongoose.Types.ObjectId.isValid(rawId)
+      ? { $or: [{ _id: rawId }, { code: String(rawId).toUpperCase() }] }
+      : { code: String(rawId).toUpperCase() };
+
+    const promo = await Promo.findOneAndDelete(query);
     if (!promo) {
       return res.status(404).json({ success: false, message: 'Promo code not found' });
     }

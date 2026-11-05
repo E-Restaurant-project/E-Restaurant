@@ -1,5 +1,10 @@
 /* Admin Panel Styling (BEM Methodology) */
 
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--color-primary, #881337) !important;
+}
+
 .admin-layout {
   display: flex;
   min-height: 100vh;

@@ -508,11 +508,18 @@ export const RestaurantProvider = ({ children }) => {
   };
 
   const updatePromoCode = async (id, updatedFields) => {
+    try {
+      const res = await apiService.updatePromo(id, updatedFields);
+      if (res?.success && res.data) {
+        setPromoCodes((prev) =>
+          prev.map((p) => (p.id === id || p._id === id || p.code === id ? { ...p, ...res.data, id: res.data._id || res.data.id || id } : p))
+        );
+        return res.data;
+      }
+    } catch (_) {}
     setPromoCodes((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...updatedFields } : p))
+      prev.map((p) => (p.id === id || p._id === id || p.code === id ? { ...p, ...updatedFields } : p))
     );
-    // Call Node.js API
-    apiService.updatePromo(id, updatedFields);
   };
 
   const deletePromoCode = async (id) => {
