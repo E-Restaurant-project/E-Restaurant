@@ -9,7 +9,7 @@ import {
   uploadDishImage,
   getAuditLogs
 } from '../controllers/dishController.js';
-import { protectAdmin } from '../middleware/authMiddleware.js';
+import { protectAdmin, resolveUser } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -19,14 +19,14 @@ router.post('/upload', protectAdmin, uploadMiddleware.single('image'), uploadDis
 // Activity / Audit logs route - Admin only
 router.get('/audit-logs', protectAdmin, getAuditLogs);
 
-// Dishes: Public can read, only Admin can create
+// Dishes: Public can read (sanitized), Admin gets full audit info
 router.route('/')
-  .get(getDishes)
+  .get(resolveUser, getDishes)
   .post(protectAdmin, createDish);
 
-// Dish by ID: Public can read, only Admin can edit/delete
+// Dish by ID: Public can read (sanitized), Admin gets full audit info
 router.route('/:id')
-  .get(getDishById)
+  .get(resolveUser, getDishById)
   .put(protectAdmin, updateDish)
   .delete(protectAdmin, deleteDish);
 

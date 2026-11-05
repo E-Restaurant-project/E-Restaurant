@@ -171,7 +171,12 @@ export const getDishes = async (req, res) => {
       ];
     }
 
-    const dishes = await Dish.find(query).sort({ createdAt: -1 });
+    let dishQuery = Dish.find(query).sort({ createdAt: -1 });
+    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'superadmin' || req.user.role === 'staff');
+    if (!isAdmin) {
+      dishQuery = dishQuery.select('-activityLogs -createdBy -updatedBy');
+    }
+    const dishes = await dishQuery;
     res.json({ success: true, count: dishes.length, data: dishes });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -182,7 +187,12 @@ export const getDishes = async (req, res) => {
 // @route   GET /api/dishes/:id
 export const getDishById = async (req, res) => {
   try {
-    const dish = await Dish.findOne(getDishQuery(req.params.id));
+    let dishQuery = Dish.findOne(getDishQuery(req.params.id));
+    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'superadmin' || req.user.role === 'staff');
+    if (!isAdmin) {
+      dishQuery = dishQuery.select('-activityLogs -createdBy -updatedBy');
+    }
+    const dish = await dishQuery;
 
     if (!dish) {
       return res.status(404).json({ success: false, message: 'Dish not found' });
