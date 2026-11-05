@@ -16,6 +16,7 @@ import { useLanguage } from '../hooks/useLanguage';
 import { useRestaurant } from '../hooks/useRestaurant';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
+import { apiService } from '../services/api';
 
 export const TrackOrder = () => {
   const { t, language, formatCurrency, formatDualCurrency } = useLanguage();
@@ -26,25 +27,56 @@ export const TrackOrder = () => {
   const [inputOrderId, setInputOrderId] = useState(searchParams.get('id') || '');
   const [searchedOrder, setSearchedOrder] = useState(null);
   const [searched, setSearched] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const fetchOrder = async (orderId, silent = false) => {
+    if (!orderId) return;
+    const cleanId = orderId.trim();
+    const localFound = getOrderById(cleanId);
+    if (localFound && !silent) {
+      setSearchedOrder(localFound);
+      setSearched(true);
+    }
+    if (!silent && !localFound) setLoading(true);
+
+    try {
+      const res = await apiService.getOrder(cleanId);
+      if (res?.success && res.data) {
+        setSearchedOrder(res.data);
+        setSearched(true);
+      } else if (!localFound && !silent) {
+        setSearchedOrder(null);
+        setSearched(true);
+      }
+    } catch (_) {
+      if (!localFound && !silent) {
+        setSearchedOrder(null);
+        setSearched(true);
+      }
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const idFromQuery = searchParams.get('id');
     if (idFromQuery) {
       setInputOrderId(idFromQuery);
-      const found = getOrderById(idFromQuery);
-      setSearchedOrder(found || null);
-      setSearched(true);
+      fetchOrder(idFromQuery);
+      // Auto-refresh every 8 seconds so customer sees status advance live
+      const interval = setInterval(() => {
+        fetchOrder(idFromQuery, true);
+      }, 8000);
+      return () => clearInterval(interval);
     }
-  }, [searchParams, orders]);
+  }, [searchParams]);
 
   const handleSearch = (e) => {
     if (e) e.preventDefault();
     if (!inputOrderId.trim()) return;
 
     setSearchParams({ id: inputOrderId.trim() });
-    const found = getOrderById(inputOrderId.trim());
-    setSearchedOrder(found || null);
-    setSearched(true);
+    fetchOrder(inputOrderId.trim());
   };
 
   const stages = [

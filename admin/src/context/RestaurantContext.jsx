@@ -441,17 +441,38 @@ export const RestaurantProvider = ({ children }) => {
       const res = await apiService.updateOrderStatus(orderId, newStatus, adminName);
       if (res?.success && res.data) {
         const updated = { ...res.data, id: res.data.orderId || res.data._id };
-        setOrders((prev) =>
-          prev.map((order) => (order.id === orderId || order.orderId === orderId ? { ...order, ...updated } : order))
-        );
+        setOrders((prev) => {
+          const next = prev.map((order) =>
+            order.id === orderId || order.orderId === orderId || (order._id && order._id === orderId)
+              ? { ...order, ...updated }
+              : order
+          );
+          try {
+            localStorage.setItem(API_CONFIG.STORAGE_KEYS.ORDERS, JSON.stringify(next));
+          } catch (_) {}
+          return next;
+        });
         return updated;
       }
-    } catch (_) {}
-
-    // Optimistic fallback
-    setOrders((prev) =>
-      prev.map((order) => (order.id === orderId || order.orderId === orderId ? { ...order, status: newStatus } : order))
-    );
+      if (res?.error) {
+        throw new Error(res.error);
+      }
+    } catch (err) {
+      console.error('[RestaurantContext] updateOrderStatus error:', err);
+      // Still update local state as fallback
+      setOrders((prev) => {
+        const next = prev.map((order) =>
+          order.id === orderId || order.orderId === orderId || (order._id && order._id === orderId)
+            ? { ...order, status: newStatus }
+            : order
+        );
+        try {
+          localStorage.setItem(API_CONFIG.STORAGE_KEYS.ORDERS, JSON.stringify(next));
+        } catch (_) {}
+        return next;
+      });
+      throw err;
+    }
   };
 
   const getOrderById = (orderId) => {

@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Order } from '../models/Order.js';
 import { Payment } from '../models/Payment.js';
 import { OrderItem } from '../models/OrderItem.js';
@@ -63,8 +64,18 @@ export const getMyOrders = async (req, res) => {
 // @route   GET /api/orders/:orderId
 export const getOrderById = async (req, res) => {
   try {
-    const cleanId = req.params.orderId.trim().toUpperCase();
-    const order = await Order.findOne({ orderId: cleanId });
+    const rawId = (req.params.orderId || '').trim();
+    const cleanId = rawId.toUpperCase();
+    const query = {
+      $or: [
+        { orderId: cleanId },
+        { order_id: cleanId },
+        { orderId: rawId },
+        { order_id: rawId },
+        ...(mongoose.Types.ObjectId.isValid(rawId) ? [{ _id: rawId }] : [])
+      ]
+    };
+    const order = await Order.findOne(query);
 
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
