@@ -15,7 +15,9 @@ import {
   EyeOff,
   ShieldCheck,
   Key,
-  Check
+  Check,
+  ExternalLink,
+  Copy
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -39,6 +41,10 @@ export const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from || '/account';
+
+  // Detect In-App Browsers (Telegram, Facebook, Instagram) where Google blocks OAuth
+  const isInAppBrowser = typeof navigator !== 'undefined' &&
+    /Telegram|FBAN|FBAV|Instagram|Line|Twitter|MicroMessenger/i.test(navigator.userAgent || navigator.vendor || '');
 
   const [mode, setMode] = useState(() => {
     try {
@@ -170,6 +176,16 @@ export const Auth = () => {
   const handleGoogleSignIn = () => {
     setError('');
     setSuccessMsg('');
+
+    if (isInAppBrowser) {
+      setError(
+        isKm
+          ? 'Google មិនអនុញ្ញាតឱ្យ Login ក្នុង Telegram ទេ។ សូមចុចសញ្ញា (...) នៅជ្រុងខាងលើស្តាំ ហើយជ្រើសរើស "Open in Chrome" ឬ "Open in Safari"។'
+          : 'Google blocks sign-in inside Telegram WebView. Please tap (...) in top right and choose "Open in Chrome" or "Open in Safari".'
+      );
+      return;
+    }
+
     if (tokenClientRef.current) {
       tokenClientRef.current.requestAccessToken({ prompt: 'select_account' });
     } else {
@@ -465,6 +481,80 @@ export const Auth = () => {
         </div>
 
         <div className="auth-card__body">
+          {/* Telegram & In-App Browser Guidance Banner */}
+          {isInAppBrowser && (
+            <div
+              style={{
+                backgroundColor: '#fffbeb',
+                border: '1.5px solid #fde68a',
+                borderRadius: '12px',
+                padding: '12px 14px',
+                marginBottom: 'var(--space-md)',
+                color: '#92400e',
+                fontSize: '0.86rem',
+                lineHeight: 1.5
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, marginBottom: '4px' }}>
+                <ExternalLink size={16} />
+                <span>{isKm ? 'លោកអ្នកកំពុងបើកក្នុង Telegram App' : 'Opened inside Telegram App'}</span>
+              </div>
+              <p style={{ margin: '0 0 10px', fontSize: '0.82rem' }}>
+                {isKm
+                  ? 'Google មិនអនុញ្ញាតឱ្យ Login ក្នុង Telegram ដោយសារគោលការណ៍សុវត្ថិភាព។ សូមចុចសញ្ញា (...) នៅជ្រុងខាងលើស្តាំ ហើយជ្រើសរើស "Open in Chrome" ឬ "Open in Safari"។'
+                  : 'Google blocks sign-in inside Telegram. Please tap (...) in top right and choose "Open in Chrome" or "Open in Safari".'}
+              </p>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {/* Android Chrome Intent button */}
+                {typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent || '') && (
+                  <a
+                    href={`intent://${window.location.host}${window.location.pathname}${window.location.search}#Intent;scheme=https;package=com.android.chrome;end`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      backgroundColor: '#d97706',
+                      color: '#ffffff',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      fontWeight: 700,
+                      fontSize: '0.8rem',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    <ExternalLink size={13} />
+                    <span>{isKm ? 'បើកក្នុង Google Chrome' : 'Open in Chrome'}</span>
+                  </a>
+                )}
+
+                {/* Copy Link Button for iPhone & others */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(window.location.href);
+                    showToastMessage(isKm ? 'បានចម្លងតំណភ្ជាប់! សូមបើកក្នុង Chrome ឬ Safari រួច Paste' : 'Link copied! Open Chrome or Safari and paste it');
+                  }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    backgroundColor: '#ffffff',
+                    color: '#92400e',
+                    border: '1.5px solid #d97706',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    fontWeight: 700,
+                    fontSize: '0.8rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Copy size={13} />
+                  <span>{isKm ? 'ចម្លងតំណភ្ជាប់ (Copy Link)' : 'Copy Link'}</span>
+                </button>
+              </div>
+            </div>
+          )}
           {error && (
             <div
               style={{
