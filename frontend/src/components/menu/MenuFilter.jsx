@@ -233,7 +233,7 @@ export const MenuFilter = ({
           )}
           {categoryList
             .filter((cat) => {
-              if (!cat) return false;
+              if (!cat || cat.id === 'all' || cat.slug === 'all') return false;
               const lbl = resolveCategoryLabel(cat, isKm);
               return typeof lbl === 'string' && lbl.trim().length > 0;
             })
