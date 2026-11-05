@@ -125,6 +125,21 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
+// Welcome Root Endpoint
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: '🍲 Phum Yeung Restaurant REST API Server',
+    status: 'ONLINE',
+    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
+    endpoints: {
+      health: '/api/health',
+      dishes: '/api/dishes',
+      categories: '/api/categories'
+    }
+  });
+});
+
 // Health Check API
 app.get('/api/health', (req, res) => {
   res.json({
