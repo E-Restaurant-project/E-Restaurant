@@ -4,7 +4,7 @@ const resolveApiBase = () => {
   if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
     return 'http://localhost:5000/api';
   }
-  return 'https://phum-yeung-backend.onrender.com/api';
+  return 'https://e-restaurant-uk4w.onrender.com/api';
 };
 
 export const API_CONFIG = {
