@@ -22,11 +22,11 @@ export const OrderSummary = ({ showCheckoutBtn = true }) => {
 
   const [inputCode, setInputCode] = useState('');
 
-  const handleApplyPromo = (e) => {
+  const handleApplyPromo = async (e) => {
     e.preventDefault();
     if (!inputCode.trim()) return;
-    const res = applyPromo(inputCode);
-    if (res.success) {
+    const res = await applyPromo(inputCode);
+    if (res?.success) {
       showToast(t('cart.promo_applied'), 'success');
       setInputCode('');
     } else {

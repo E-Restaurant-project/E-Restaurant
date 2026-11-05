@@ -15,7 +15,15 @@ export const CartItem = ({ item }) => {
 
   return (
     <div className="cart-item">
-      <img src={getImageUrl(item.image)} alt={name} className="cart-item__img" />
+      <img
+        src={getImageUrl(item.image)}
+        alt={name}
+        className="cart-item__img"
+        onError={(e) => {
+          e.currentTarget.onerror = null;
+          e.currentTarget.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80';
+        }}
+      />
 
       <div className="cart-item__info">
         <h4>{name}</h4>

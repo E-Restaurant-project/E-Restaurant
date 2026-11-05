@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { API_CONFIG } from '../config/api';
+import { apiService } from '../services/api';
 import { useRestaurant } from './RestaurantContext';
 import { isNonSpicyCategory } from '../data/menu';
 
@@ -90,14 +91,23 @@ export const CartProvider = ({ children }) => {
     setDiscountPercent(0);
   };
 
-  const applyPromo = (code) => {
-    const res = validatePromoCode(code);
-    if (res.valid) {
+  const applyPromo = async (code) => {
+    let res = validatePromoCode(code);
+    if (!res?.valid) {
+      try {
+        const clean = (code || '').trim().toUpperCase();
+        const serverRes = await apiService.validatePromo(clean);
+        if (serverRes?.success && serverRes?.discount) {
+          res = { valid: true, discount: serverRes.discount, code: serverRes.code || clean };
+        }
+      } catch (_) {}
+    }
+    if (res?.valid) {
       setPromoCode(res.code);
       setDiscountPercent(res.discount);
-      return { success: true, discount: res.discount };
+      return { success: true, discount: res.discount, code: res.code };
     }
-    return { success: false, error: res.error };
+    return { success: false, error: res?.error || 'Invalid or inactive promo code' };
   };
 
   // Calculations based on dynamic store settings

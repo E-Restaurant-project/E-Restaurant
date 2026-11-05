@@ -760,7 +760,162 @@ export const Auth = () => {
                       <span>{googleLoading ? (isKm ? 'កំពុងដំណើរការ...' : 'Connecting...') : (isKm ? 'បន្តជាមួយ Google ដើម្បីចុះឈ្មោះ' : 'Continue with Google')}</span>
                     </button>
                   </div>
+
+                  {/* Manual Email Register Option Toggle */}
+                  <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', margin: '16px 0', color: '#94a3b8', fontSize: '0.85rem' }}>
+                      <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }} />
+                      <span style={{ padding: '0 12px' }}>{isKm ? 'ឬ' : 'or'}</span>
+                      <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }} />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowManualRegister(true)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--color-primary, #881337)',
+                        fontWeight: 700,
+                        fontSize: '0.92rem',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        textDecoration: 'underline'
+                      }}
+                    >
+                      <Mail size={16} />
+                      <span>{isKm ? 'ចុះឈ្មោះដោយប្រើអ៊ីមែល និងពាក្យសម្ងាត់' : 'Sign up with Email and Password'}</span>
+                    </button>
+                  </div>
                 </div>
+              )}
+
+              {/* MANUAL EMAIL REGISTRATION FORM */}
+              {registerStep === 'google' && showManualRegister && (
+                <form onSubmit={handleDirectRegisterSubmit}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#1e293b' }}>
+                      {isKm ? 'ចុះឈ្មោះគណនីថ្មី' : 'Create New Account'}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowManualRegister(false)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--color-primary, #881337)',
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontWeight: 600
+                      }}
+                    >
+                      <ArrowLeft size={14} />
+                      <span>{isKm ? 'ត្រឡប់ទៅ Google' : 'Back to Google'}</span>
+                    </button>
+                  </div>
+
+                  {/* Name */}
+                  <div className="form-group auth-field-stagger" style={{ marginBottom: '12px' }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.88rem' }}>
+                      {isKm ? 'ឈ្មោះពេញ' : 'Full Name'} *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      required
+                      placeholder={isKm ? 'ឧទាហរណ៍: សុខ ចាន់ដារ៉ា' : 'e.g. John Doe'}
+                      value={registerData.name}
+                      onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Email */}
+                  <div className="form-group auth-field-stagger" style={{ marginBottom: '12px' }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.88rem' }}>
+                      {isKm ? 'អ៊ីមែល' : 'Email'} *
+                    </label>
+                    <input
+                      type="email"
+                      className="form-input"
+                      required
+                      placeholder="example@gmail.com"
+                      value={registerData.email}
+                      onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Password */}
+                  <div className="form-group auth-field-stagger" style={{ marginBottom: '12px' }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.88rem' }}>
+                      {isKm ? 'ពាក្យសម្ងាត់' : 'Password'} *
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showRegisterPassword ? 'text' : 'password'}
+                        className="form-input"
+                        required
+                        minLength={6}
+                        placeholder={isKm ? 'យ៉ាងតិច ៦ តួអក្សរ' : 'Min 6 characters'}
+                        value={registerData.password}
+                        onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                        style={{ paddingRight: '40px' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                        style={{
+                          position: 'absolute',
+                          right: '12px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: '#94a3b8',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {showRegisterPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Phone */}
+                  <div className="form-group auth-field-stagger" style={{ marginBottom: '12px' }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.88rem' }}>
+                      {isKm ? 'លេខទូរស័ព្ទ' : 'Phone Number'}
+                    </label>
+                    <input
+                      type="tel"
+                      className="form-input"
+                      placeholder="012 345 678"
+                      value={registerData.phone}
+                      onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Delivery Address */}
+                  <div className="form-group auth-field-stagger" style={{ marginBottom: '18px' }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.88rem' }}>
+                      {isKm ? 'អាសយដ្ឋានដឹកជញ្ជូន' : 'Delivery Address'}
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder={isKm ? 'ផ្ទះលេខ, ផ្លូវ, ខណ្ឌ' : 'Street, District, City'}
+                      value={registerData.address}
+                      onChange={(e) => setRegisterData({ ...registerData, address: e.target.value })}
+                    />
+                  </div>
+
+                  <Button type="submit" variant="primary" fullWidth size="lg">
+                    {isKm ? 'ចុះឈ្មោះឥឡូវនេះ' : 'Register Now'}
+                  </Button>
+                </form>
               )}
 
               {/* STEP 2 (AFTER GOOGLE): Fill Name, Phone, and Delivery Address */}

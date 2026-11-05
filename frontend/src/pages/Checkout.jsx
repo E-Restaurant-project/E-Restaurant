@@ -19,6 +19,7 @@ import { useRestaurant } from '../hooks/useRestaurant';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import { apiService } from '../services/api';
+import { getImageUrl } from '../config/api';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
 
@@ -639,7 +640,15 @@ export const Checkout = () => {
               {items.map((item) => (
                 <div key={item.cartItemId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <img src={item.image} alt={isKm ? item.name_km : item.name_en} style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
+                    <img
+                      src={getImageUrl(item.image)}
+                      alt={isKm ? item.name_km : item.name_en}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80';
+                      }}
+                      style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }}
+                    />
                     <div>
                       <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{isKm ? item.name_km : item.name_en}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>x {item.quantity}</div>

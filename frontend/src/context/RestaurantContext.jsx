@@ -130,46 +130,59 @@ export const RestaurantProvider = ({ children }) => {
   useEffect(() => {
     let isMounted = true;
     const fetchBackendData = async () => {
-      // Dishes: backend database is the single source of truth
-      const dishesRes = await apiService.getDishes();
-      if (isMounted && dishesRes.success && Array.isArray(dishesRes.data)) {
-        const backendDishes = dishesRes.data.map(d => ({ ...d, id: d.dishId || d._id }));
-        setDishes(backendDishes);
-        try {
-          localStorage.setItem(API_CONFIG.STORAGE_KEYS.MENU, JSON.stringify(backendDishes));
-        } catch (_) {}
+      // 1. Dishes from Database
+      try {
+        const dishesRes = await apiService.getDishes();
+        if (isMounted && dishesRes?.success && Array.isArray(dishesRes.data)) {
+          const backendDishes = dishesRes.data.map(d => ({ ...d, id: d.dishId || d._id }));
+          setDishes(backendDishes);
+          try {
+            localStorage.setItem(API_CONFIG.STORAGE_KEYS.MENU, JSON.stringify(backendDishes));
+          } catch (_) {}
+        }
+      } catch (err) {
+        console.warn('[RestaurantContext] Dishes fetch fallback:', err.message);
       }
 
-      // Orders from Database
-      const ordersRes = await apiService.getOrders();
-      if (isMounted && ordersRes.success && Array.isArray(ordersRes.data)) {
-        const backendOrders = ordersRes.data.map(o => ({ ...o, id: o.orderId || o._id }));
-        setOrders(backendOrders);
-        try {
-          localStorage.setItem(API_CONFIG.STORAGE_KEYS.ORDERS, JSON.stringify(backendOrders));
-        } catch (_) {}
+      // 2. Categories from Database
+      try {
+        const categoriesRes = await apiService.getCategories();
+        if (isMounted && categoriesRes?.success && Array.isArray(categoriesRes.data)) {
+          const normalized = categoriesRes.data.map(normalizeCategoryItem).filter(Boolean);
+          setCategories(normalized);
+          try {
+            localStorage.setItem('phum_yeung_categories_v3', JSON.stringify(normalized));
+          } catch (_) {}
+        }
+      } catch (err) {
+        console.warn('[RestaurantContext] Categories fetch fallback:', err.message);
       }
 
-      // Categories from Database
-      const categoriesRes = await apiService.getCategories();
-      if (isMounted && categoriesRes.success && Array.isArray(categoriesRes.data)) {
-        const normalized = categoriesRes.data.map(normalizeCategoryItem).filter(Boolean);
-        setCategories(normalized);
-        try {
-          localStorage.setItem('phum_yeung_categories_v3', JSON.stringify(normalized));
-        } catch (_) {}
+      // 3. Settings from Database (Delivery Fee, Threshold, Announcement)
+      try {
+        const settingsRes = await apiService.getSettings();
+        if (isMounted && settingsRes?.success && settingsRes.data) {
+          setStoreSettings(settingsRes.data);
+          try {
+            localStorage.setItem('phum_yeung_settings', JSON.stringify(settingsRes.data));
+          } catch (_) {}
+        }
+      } catch (err) {
+        console.warn('[RestaurantContext] Settings fetch fallback:', err.message);
       }
 
-      // Settings
-      const settingsRes = await apiService.getSettings();
-      if (isMounted && settingsRes.success && settingsRes.data) {
-        setStoreSettings(settingsRes.data);
-      }
-
-      // Promos
-      const promosRes = await apiService.getPromos();
-      if (isMounted && promosRes.success && Array.isArray(promosRes.data) && promosRes.data.length > 0) {
-        setPromoCodes(promosRes.data.map(p => ({ ...p, id: p._id || p.id })));
+      // 4. Promos from Database
+      try {
+        const promosRes = await apiService.getPromos();
+        if (isMounted && promosRes?.success && Array.isArray(promosRes.data) && promosRes.data.length > 0) {
+          const loadedPromos = promosRes.data.map(p => ({ ...p, id: p._id || p.id }));
+          setPromoCodes(loadedPromos);
+          try {
+            localStorage.setItem('phum_yeung_promos', JSON.stringify(loadedPromos));
+          } catch (_) {}
+        }
+      } catch (err) {
+        console.warn('[RestaurantContext] Promos fetch fallback:', err.message);
       }
     };
 
