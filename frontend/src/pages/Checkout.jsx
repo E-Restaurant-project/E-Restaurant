@@ -300,75 +300,186 @@ export const Checkout = () => {
   // If order is completed, show confirmation view
   if (submittedOrder && submittedOrder.total !== undefined) {
     const orderTotal = Number(submittedOrder.total || 0);
+    const orderSubtotal = Number(submittedOrder.subtotal || 0);
+    const orderDeliveryFee = Number(submittedOrder.deliveryFee || 0);
+    const orderDiscount = Number(submittedOrder.discount || 0);
     const orderDual = formatDualCurrency(orderTotal);
     const orderItems = Array.isArray(submittedOrder.items) ? submittedOrder.items : [];
     const orderId = submittedOrder.id || submittedOrder.orderId || 'PY-ORD-0000';
+    const orderDate = submittedOrder.createdAt
+      ? new Date(submittedOrder.createdAt).toLocaleString(isKm ? 'km-KH' : 'en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      : new Date().toLocaleString(isKm ? 'km-KH' : 'en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
 
     return (
-      <div className="section">
+      <div className="section checkout-confirmation-section">
         <div className="container">
           <div className="confirmation-card">
-            <div className="confirmation-card__icon">
-              <CheckCircle size={44} />
-            </div>
-            <h2>{t('checkout.order_success_title')}</h2>
-            <p style={{ color: 'var(--color-text-muted)' }}>{t('checkout.order_success_desc')}</p>
-
-            <div style={{ margin: 'var(--space-md) 0' }}>
-              <span style={{ fontWeight: 600 }}>{t('checkout.order_id')} </span>
-              <strong style={{ color: 'var(--color-primary)', fontSize: '1.3rem' }}>
-                {orderId}
-              </strong>
+            {/* On-screen Only: Success Status Checkmark */}
+            <div className="no-print">
+              <div className="confirmation-card__icon">
+                <CheckCircle size={44} />
+              </div>
+              <h2>{t('checkout.order_success_title')}</h2>
+              <p style={{ color: 'var(--color-text-muted)' }}>{t('checkout.order_success_desc')}</p>
             </div>
 
-            {/* Receipt details */}
-            <div className="confirmation-receipt">
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span>{t('checkout.full_name')}:</span>
-                <strong>{submittedOrder.customerName}</strong>
+            {/* REAL OFFICIAL PRINTABLE INVOICE / RECEIPT */}
+            <div className="printable-invoice">
+              {/* Receipt Header */}
+              <div className="invoice-header">
+                <div className="invoice-brand">
+                  <img
+                    src="/phum_yeung_logo.jpg"
+                    alt="Phum Yeung Restaurant"
+                    className="invoice-logo"
+                  />
+                  <div>
+                    <h3 className="invoice-title-km">ភោជនីយដ្ឋាន ភូមិយើង</h3>
+                    <div className="invoice-title-en">PHUM YEUNG RESTAURANT</div>
+                    <div className="invoice-subtitle">រសជាតិខ្មែរពិតៗ • Authentic Khmer Cuisine</div>
+                  </div>
+                </div>
+                <div className="invoice-meta">
+                  <div className="invoice-badge">{isKm ? 'វិក្កយបត្រ / RECEIPT' : 'OFFICIAL RECEIPT'}</div>
+                  <div className="invoice-number">
+                    <span>{isKm ? 'លេខកូដ:' : 'Order ID:'}</span> <strong>{orderId}</strong>
+                  </div>
+                  <div className="invoice-date">
+                    <span>{isKm ? 'កាលបរិច្ឆេទ:' : 'Date:'}</span> {orderDate}
+                  </div>
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span>{t('checkout.phone')}:</span>
-                <strong>{submittedOrder.phone}</strong>
+
+              <div className="invoice-divider" />
+
+              {/* Customer & Delivery Information */}
+              <div className="invoice-info-grid">
+                <div className="invoice-info-col">
+                  <div className="invoice-info-row">
+                    <span className="info-label">{t('checkout.full_name')}:</span>
+                    <strong className="info-val">{submittedOrder.customerName}</strong>
+                  </div>
+                  <div className="invoice-info-row">
+                    <span className="info-label">{t('checkout.phone')}:</span>
+                    <strong className="info-val">{submittedOrder.phone}</strong>
+                  </div>
+                </div>
+                <div className="invoice-info-col">
+                  <div className="invoice-info-row">
+                    <span className="info-label">{t('checkout.order_type')}:</span>
+                    <strong className="info-val">{t(`checkout.${submittedOrder.orderType}`)}</strong>
+                  </div>
+                  <div className="invoice-info-row">
+                    <span className="info-label">{t('checkout.payment_method')}:</span>
+                    <strong className="info-val">
+                      {submittedOrder.paymentMethod === 'khqr' ? 'Bakong KHQR' : 'COD'}
+                      {submittedOrder.isPaid ? ' (PAID)' : ''}
+                    </strong>
+                  </div>
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span>{t('checkout.order_type')}:</span>
-                <strong>{t(`checkout.${submittedOrder.orderType}`)}</strong>
-              </div>
+
               {submittedOrder.address && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span>{t('checkout.delivery_address')}:</span>
-                  <strong>{submittedOrder.address}</strong>
+                <div className="invoice-info-row invoice-address-row">
+                  <span className="info-label">{t('checkout.delivery_address')}:</span>
+                  <strong className="info-val">{submittedOrder.address}</strong>
                 </div>
               )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span>{t('checkout.payment_method')}:</span>
-                <strong>{submittedOrder.paymentMethod === 'khqr' ? 'Bakong KHQR' : 'COD'}</strong>
-              </div>
 
-              <div style={{ borderTop: '1px solid var(--color-border)', margin: '12px 0' }} />
+              <div className="invoice-divider" />
 
-              <div>
-                <h4 style={{ marginBottom: '8px' }}>{t('cart.item')} ({orderItems.length}):</h4>
-                {orderItems.map((it, idx) => (
-                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '4px' }}>
-                    <span>{it.quantity}x {isKm ? (it.name_km || it.nameKm || it.name) : (it.name_en || it.nameEn || it.name)}</span>
-                    <span>{formatCurrency((it.price || 0) * (it.quantity || 1))}</span>
+              {/* Itemized Table */}
+              <table className="invoice-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '40px', textAlign: 'center' }}>#</th>
+                    <th style={{ textAlign: 'left' }}>{isKm ? 'មុខម្ហូប' : 'Item Description'}</th>
+                    <th style={{ width: '60px', textAlign: 'center' }}>{isKm ? 'ចំនួន' : 'Qty'}</th>
+                    <th style={{ width: '90px', textAlign: 'right' }}>{isKm ? 'តម្លៃ' : 'Price'}</th>
+                    <th style={{ width: '100px', textAlign: 'right' }}>{isKm ? 'សរុប' : 'Amount'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orderItems.map((it, idx) => {
+                    const itemName = isKm ? (it.name_km || it.nameKm || it.name) : (it.name_en || it.nameEn || it.name);
+                    const itemQty = it.quantity || 1;
+                    const itemPrice = Number(it.price || 0);
+                    const itemTotal = itemPrice * itemQty;
+                    return (
+                      <tr key={idx}>
+                        <td style={{ textAlign: 'center' }}>{idx + 1}</td>
+                        <td style={{ textAlign: 'left', fontWeight: 600 }}>{itemName}</td>
+                        <td style={{ textAlign: 'center' }}>{itemQty}</td>
+                        <td style={{ textAlign: 'right' }}>{formatCurrency(itemPrice)}</td>
+                        <td style={{ textAlign: 'right', fontWeight: 700 }}>{formatCurrency(itemTotal)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              <div className="invoice-divider" />
+
+              {/* Summary Totals */}
+              <div className="invoice-summary">
+                {orderSubtotal > 0 && orderSubtotal !== orderTotal && (
+                  <div className="invoice-summary-row">
+                    <span>{t('cart.subtotal')}:</span>
+                    <span>{formatCurrency(orderSubtotal)}</span>
                   </div>
-                ))}
+                )}
+                {orderDeliveryFee > 0 && (
+                  <div className="invoice-summary-row">
+                    <span>{t('cart.delivery_fee')}:</span>
+                    <span>{formatCurrency(orderDeliveryFee)}</span>
+                  </div>
+                )}
+                {orderDiscount > 0 && (
+                  <div className="invoice-summary-row invoice-discount-row">
+                    <span>{isKm ? 'បញ្ចុះតម្លៃ' : 'Discount'}:</span>
+                    <span>-{formatCurrency(orderDiscount)}</span>
+                  </div>
+                )}
+                <div className="invoice-summary-row invoice-grand-total">
+                  <span>{t('cart.grand_total')}:</span>
+                  <span className="total-highlight">
+                    {orderDual.usd} ({orderDual.khr})
+                  </span>
+                </div>
               </div>
 
-              <div style={{ borderTop: '1px solid var(--color-border)', margin: '12px 0' }} />
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '1.1rem' }}>
-                <span>{t('cart.grand_total')}:</span>
-                <span style={{ color: 'var(--color-primary)' }}>
-                  {orderDual.usd} ({orderDual.khr})
-                </span>
+              {/* Receipt Footer */}
+              <div className="invoice-footer">
+                <div className="invoice-footer-thanks">
+                  {isKm
+                    ? '🙏 សូមអរគុណសម្រាប់ការគាំទ្រភោជនីយដ្ឋាន ភូមិយើង!'
+                    : '🙏 Thank you for dining with Phum Yeung Restaurant!'}
+                </div>
+                <div className="invoice-footer-contact">
+                  <span>Tel: 012 345 678 / 098 765 432</span>
+                  <span> • </span>
+                  <span>Phnom Penh, Cambodia</span>
+                </div>
+                <div className="invoice-footer-note">
+                  {isKm ? 'ទំនិញដែលបានទិញរួច មិនអាចប្តូរប្រាក់វិញបានទេ' : 'Goods sold are non-refundable'}
+                </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {/* Action Buttons (Strictly Screen Only, Hidden when Printing) */}
+            <div className="no-print confirmation-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '20px' }}>
               <Link to={`/track-order?id=${orderId}`}>
                 <Button variant="primary" icon={<Truck size={18} />}>
                   {t('checkout.track_order_btn')}

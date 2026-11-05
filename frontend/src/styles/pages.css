@@ -1087,6 +1087,335 @@
 }
 
 /* ==========================================================================
+   Printable Invoice & Receipt Styles (Screen & Print Media)
+   ========================================================================== */
+.printable-invoice {
+  text-align: left;
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin: var(--space-lg) 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  color: #1e293b;
+}
+
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.invoice-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.invoice-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--color-primary);
+  flex-shrink: 0;
+}
+
+.invoice-title-km {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-primary-dark);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.invoice-title-en {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.invoice-subtitle {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.invoice-meta {
+  text-align: right;
+  font-size: 0.85rem;
+}
+
+.invoice-badge {
+  display: inline-block;
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 4px;
+}
+
+.invoice-number {
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.invoice-date {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.invoice-divider {
+  border-top: 1px dashed #cbd5e1;
+  margin: 14px 0;
+}
+
+.invoice-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 20px;
+  font-size: 0.88rem;
+}
+
+.invoice-info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.invoice-address-row {
+  margin-top: 4px;
+  font-size: 0.88rem;
+}
+
+.info-label {
+  color: #64748b;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.info-val {
+  color: #0f172a;
+  text-align: right;
+  word-break: break-word;
+}
+
+.invoice-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 0.88rem;
+}
+
+.invoice-table th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  padding: 8px 10px;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.82rem;
+}
+
+.invoice-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+}
+
+.invoice-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-left: auto;
+  max-width: 320px;
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+
+.invoice-summary-row {
+  display: flex;
+  justify-content: space-between;
+  color: #475569;
+}
+
+.invoice-discount-row {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.invoice-grand-total {
+  border-top: 2px solid #e2e8f0;
+  padding-top: 8px;
+  margin-top: 4px;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
+.total-highlight {
+  color: var(--color-primary, #881337);
+  font-weight: 800;
+}
+
+.invoice-footer {
+  text-align: center;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed #cbd5e1;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.invoice-footer-thanks {
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.invoice-footer-contact {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.invoice-footer-note {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* ==========================================================================
+   Strict Print Media Styling (1-Page Crisp Clean Printable Receipt)
+   ========================================================================== */
+@media print {
+  /* 1. Force Browser Print Settings */
+  @page {
+    size: portrait;
+    margin: 8mm 10mm;
+  }
+
+  /* 2. Completely Hide All Non-Print Elements */
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 10pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  header,
+  nav,
+  footer,
+  .navbar,
+  .announcement-bar,
+  .footer,
+  .no-print,
+  .confirmation-card__icon,
+  .confirmation-actions,
+  .btn,
+  button {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 3. Strip Page Wrappers so ONLY Invoice Prints */
+  .section,
+  .checkout-page,
+  .checkout-confirmation-section,
+  .container {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  .confirmation-card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    background: transparent !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* 4. Sharp High-Contrast Black/Dark Styling for Paper */
+  .printable-invoice {
+    border: 1.5px solid #000000 !important;
+    border-radius: 6px !important;
+    padding: 14px 18px !important;
+    margin: 0 auto !important;
+    max-width: 550px !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .printable-invoice * {
+    color: #000000 !important;
+    text-shadow: none !important;
+  }
+
+  .invoice-divider {
+    border-top: 1px dashed #000000 !important;
+    margin: 10px 0 !important;
+  }
+
+  .invoice-table th {
+    background-color: #f1f5f9 !important;
+    border-top: 1px solid #000000 !important;
+    border-bottom: 1px solid #000000 !important;
+    color: #000000 !important;
+    font-weight: 800 !important;
+  }
+
+  .invoice-table td {
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+  .invoice-grand-total {
+    border-top: 2px dashed #000000 !important;
+    padding-top: 6px !important;
+    font-weight: 800 !important;
+    font-size: 1.1rem !important;
+  }
+
+  .total-highlight {
+    color: #000000 !important;
+    font-weight: 900 !important;
+  }
+
+  .invoice-badge {
+    border: 1px solid #000000 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}
+
+/* ==========================================================================
    Mobile-First Clean Responsive Enhancements (Phones & Tablets)
    ========================================================================== */
 @media (max-width: 992px) {
