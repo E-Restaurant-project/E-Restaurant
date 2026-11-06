@@ -48,9 +48,12 @@ const request = async (endpoint, options = {}) => {
       };
     }
     return {
+      ...data,
       success: data.success !== undefined ? data.success : true,
       responseCode: data.responseCode,
+      errorCode: data.errorCode,
       isPaid: data.isPaid,
+      isRateLimited: data.isRateLimited,
       data: data.data !== undefined ? data.data : data,
       message: data.message || data.responseMessage
     };

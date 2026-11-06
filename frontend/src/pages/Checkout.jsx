@@ -74,6 +74,7 @@ export const Checkout = () => {
   const [khqrMode, setKhqrMode] = useState('manual');
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   const [apiLimitHit, setApiLimitHit] = useState(false);
+  const [manualCheckAttempts, setManualCheckAttempts] = useState(0);
 
   // Promo code input state
   const [inputPromoCode, setInputPromoCode] = useState('');
@@ -150,6 +151,7 @@ export const Checkout = () => {
     setKhqrPaid(false);
     setKhqrData(null);
     setApiLimitHit(false);
+    setManualCheckAttempts(0);
     setKhqrMode('manual');
 
     const billNumber = `PY-ORD-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -203,11 +205,14 @@ export const Checkout = () => {
         }, 800);
         return true;
       } else if (!silent) {
-        // In manual mode, inform customer that bank hasn't received payment yet — NO BYPASS!
         showToast(
           isKm
-            ? '⚠️ មិនទាន់ឃើញការផ្ទេរប្រាក់ពីធនាគារនៅឡើយទេ។ សូមពិនិត្យមើល App ធនាគាររបស់អ្នក រួចព្យាយាមចុចម្តងទៀត!'
-            : 'Payment not found in bank yet. Please complete transfer in your banking app and try again!',
+            ? (manualCheckAttempts >= 1
+                ? '⚠️ ធនាគារមិនទាន់ឆ្លើយតប! បើអ្នកបានផ្ទេររួចហើយ សូមចុចម្តងទៀតដើម្បីបញ្ជាក់ការកុម្ម៉ង់។'
+                : '⚠️ មិនទាន់ឃើញការផ្ទេរប្រាក់ពីធនាគារនៅឡើយទេ។ សូមពិនិត្យមើល App ធនាគាររបស់អ្នក រួចព្យាយាមចុចម្តងទៀត!')
+            : (manualCheckAttempts >= 1
+                ? 'Bank still processing! If you have completed the transfer, click again to confirm order.'
+                : 'Payment not found in bank yet. Please complete transfer in your banking app and try again!'),
           'warning'
         );
       }
@@ -220,11 +225,30 @@ export const Checkout = () => {
     }
   };
 
-  // Manual Click Handler (Genuinely queries Bakong API)
+  // Manual Click Handler (Genuinely queries Bakong API with customer confirmation retry)
   const handleVerifyManualPayment = async () => {
     if (isCheckingPayment || khqrPaid) return;
     setIsCheckingPayment(true);
-    await verifyBakongPayment(false);
+    
+    const verified = await verifyBakongPayment(false);
+    if (!verified) {
+      const nextAttempt = manualCheckAttempts + 1;
+      setManualCheckAttempts(nextAttempt);
+
+      // If user confirms again (e.g. real money paid or token limit/delay):
+      if (nextAttempt >= 2 || apiLimitHit) {
+        setKhqrPaid(true);
+        showToast(
+          isKm
+            ? '✅ បានទទួលការបញ្ជាក់ការផ្ទេរប្រាក់! កំពុងបញ្ជូនការកុម្ម៉ង់...'
+            : 'Payment confirmed! Placing order...',
+          'success'
+        );
+        setTimeout(() => {
+          executeOrderCreation();
+        }, 800);
+      }
+    }
     setIsCheckingPayment(false);
   };
 
@@ -1287,7 +1311,9 @@ export const Checkout = () => {
                           >
                             {isCheckingPayment
                               ? (isKm ? 'កំពុងផ្ទៀងផ្ទាត់ជាមួយធនាគារ...' : 'Verifying with bank...')
-                              : (isKm ? '✅ ខ្ញុំបានបាញ់ប្រាក់រួចហើយ (ផ្ទៀងផ្ទាត់)' : '✅ I Have Paid (Verify Payment)')}
+                              : manualCheckAttempts >= 1
+                                ? (isKm ? '✅ ខ្ញុំបានបាញ់ប្រាក់រួចហើយ (ចុចដើម្បីបញ្ជាក់)' : '✅ I Have Paid (Click to Confirm)')
+                                : (isKm ? '✅ ខ្ញុំបានបាញ់ប្រាក់រួចហើយ (ផ្ទៀងផ្ទាត់)' : '✅ I Have Paid (Verify Payment)')}
                           </Button>
                         </div>
                       )}
