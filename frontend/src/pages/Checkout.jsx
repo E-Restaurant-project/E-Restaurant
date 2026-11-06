@@ -134,7 +134,7 @@ export const Checkout = () => {
     setKhqrTimeLeft(120);
     setKhqrPaid(false);
     setKhqrData(null);
-    setKhqrCheckMode('manual'); // default: manual to save Bakong API quota
+    setKhqrCheckMode('auto'); // default: auto-polling for seamless detection
     setApiLimitHit(false);   // reset rate limit flag
 
     const billNumber = `PY-ORD-${Math.floor(1000 + Math.random() * 9000)}`;
