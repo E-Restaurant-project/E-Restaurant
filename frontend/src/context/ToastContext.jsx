@@ -11,13 +11,20 @@ export const ToastProvider = ({ children }) => {
   }, []);
 
   const showToast = useCallback((message, type = 'success', duration = 3600) => {
-    const id = Date.now() + Math.random().toString();
-    const newToast = { id, message, type, duration };
-    setToasts((prev) => [...prev, newToast]);
-
-    setTimeout(() => {
-      removeToast(id);
-    }, duration);
+    setToasts((prev) => {
+      // Prevent stacking identical toast messages
+      if (prev.some((t) => t.message === message)) {
+        return prev;
+      }
+      const id = Date.now() + Math.random().toString();
+      const newToast = { id, message, type, duration };
+      setTimeout(() => {
+        removeToast(id);
+      }, duration);
+      // Cap at most 2 active toasts so it never blocks the modal or screen
+      const trimmed = prev.length >= 2 ? prev.slice(prev.length - 1) : prev;
+      return [...trimmed, newToast];
+    });
   }, [removeToast]);
 
   const getToastIcon = (type) => {

@@ -70,8 +70,8 @@ export const Checkout = () => {
   const [khqrLoading, setKhqrLoading] = useState(false);
   const [khqrTimeLeft, setKhqrTimeLeft] = useState(120);
   const [khqrPaid, setKhqrPaid] = useState(false);
-  // 'auto' = auto-poll bank & hide button | 'manual' = wait for user click to verify
-  const [khqrMode, setKhqrMode] = useState('auto');
+  // 'manual' = wait for user click to verify (default) | 'auto' = auto-poll bank
+  const [khqrMode, setKhqrMode] = useState('manual');
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   const [apiLimitHit, setApiLimitHit] = useState(false);
 
@@ -150,6 +150,7 @@ export const Checkout = () => {
     setKhqrPaid(false);
     setKhqrData(null);
     setApiLimitHit(false);
+    setKhqrMode('manual');
 
     const billNumber = `PY-ORD-${Math.floor(1000 + Math.random() * 9000)}`;
     const res = await apiService.generateBakongKHQR({
@@ -1208,20 +1209,6 @@ export const Checkout = () => {
                       >
                         <button
                           type="button"
-                          className={`auth-segmented-btn ${khqrMode === 'auto' ? 'auth-segmented-btn--active' : ''}`}
-                          onClick={() => setKhqrMode('auto')}
-                          style={{
-                            borderRadius: '20px',
-                            padding: '8px 14px',
-                            fontSize: '0.82rem',
-                            fontWeight: 700
-                          }}
-                        >
-                          <span>🔁</span>
-                          <span>{isKm ? 'ពិនិត្យស្វ័យប្រវត្តិ (Auto)' : 'Auto Verify'}</span>
-                        </button>
-                        <button
-                          type="button"
                           className={`auth-segmented-btn ${khqrMode === 'manual' ? 'auth-segmented-btn--active' : ''}`}
                           onClick={() => setKhqrMode('manual')}
                           style={{
@@ -1233,6 +1220,20 @@ export const Checkout = () => {
                         >
                           <span>👆</span>
                           <span>{isKm ? 'ចុចដោយដៃ (Manual)' : 'Manual Click'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`auth-segmented-btn ${khqrMode === 'auto' ? 'auth-segmented-btn--active' : ''}`}
+                          onClick={() => setKhqrMode('auto')}
+                          style={{
+                            borderRadius: '20px',
+                            padding: '8px 14px',
+                            fontSize: '0.82rem',
+                            fontWeight: 700
+                          }}
+                        >
+                          <span>🔁</span>
+                          <span>{isKm ? 'ពិនិត្យស្វ័យប្រវត្តិ (Auto)' : 'Auto Verify'}</span>
                         </button>
                       </div>
 
