@@ -308,36 +308,6 @@ export const AdminOrders = () => {
                 </button>
               ))}
             </div>
-
-            {/* Payment Filter */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#475569' }}>
-                {isKm ? 'ការទូទាត់:' : 'Payment:'}
-              </span>
-              {[
-                { id: 'all', label: isKm ? 'ទាំងអស់' : 'All' },
-                { id: 'cash', label: isKm ? '💵 សាច់ប្រាក់' : '💵 Cash' },
-                { id: 'khqr', label: isKm ? '📱 KHQR' : '📱 KHQR' }
-              ].map((pm) => (
-                <button
-                  key={pm.id}
-                  type="button"
-                  onClick={() => setPaymentFilter(pm.id)}
-                  style={{
-                    padding: '4px 9px',
-                    borderRadius: '6px',
-                    fontSize: '0.78rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    border: paymentFilter === pm.id ? '1.5px solid var(--color-primary)' : '1px solid #cbd5e1',
-                    backgroundColor: paymentFilter === pm.id ? 'rgba(136, 19, 55, 0.08)' : '#ffffff',
-                    color: paymentFilter === pm.id ? 'var(--color-primary)' : '#475569'
-                  }}
-                >
-                  {pm.label}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Custom Date Inputs if custom selected */}
