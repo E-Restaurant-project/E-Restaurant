@@ -912,8 +912,6 @@ export const AdminPromos = () => {
                     <th>{t('admin.promo_code')}</th>
                     <th>{t('admin.promo_discount')}</th>
                     <th>Description</th>
-                    <th>{t('admin.status')}</th>
-                    <th>Toggle</th>
                     <th>{t('admin.action')}</th>
                   </tr>
                 </thead>
@@ -955,29 +953,6 @@ export const AdminPromos = () => {
                           {p.discount}% OFF
                         </td>
                         <td>{p.description || 'Special Promotion'}</td>
-                        <td>
-                          {p.active ? (
-                            <Badge variant="success">
-                              <CheckCircle2 size={12} />
-                              <span>{t('admin.promo_active')}</span>
-                            </Badge>
-                          ) : (
-                            <Badge variant="danger">
-                              <XCircle size={12} />
-                              <span>{t('admin.promo_inactive')}</span>
-                            </Badge>
-                          )}
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className={`btn btn--sm ${p.active ? 'btn--outline' : 'btn--secondary'}`}
-                            onClick={() => handleToggleActive(p)}
-                            style={{ fontSize: '0.75rem', padding: '4px 10px' }}
-                          >
-                            {p.active ? 'Deactivate' : 'Activate'}
-                          </button>
-                        </td>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <button
@@ -1109,20 +1084,7 @@ export const AdminPromos = () => {
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--space-lg)' }}>
-            <input
-              type="checkbox"
-              id="promo_active"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              style={{ width: '16px', height: '16px' }}
-            />
-            <label htmlFor="promo_active" style={{ cursor: 'pointer', fontSize: '0.9rem' }}>
-              {t('admin.promo_active')}
-            </label>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)', marginTop: 'var(--space-lg)' }}>
             <Button variant="ghost" onClick={() => setIsAddModalOpen(false)}>
               {t('admin.cancel')}
             </Button>
@@ -1193,20 +1155,7 @@ export const AdminPromos = () => {
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--space-lg)' }}>
-            <input
-              type="checkbox"
-              id="edit_promo_active"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--color-primary, #881337)' }}
-            />
-            <label htmlFor="edit_promo_active" style={{ cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>
-              {t('admin.promo_active')}
-            </label>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)', marginTop: 'var(--space-lg)' }}>
             <Button
               variant="ghost"
               onClick={() => {
