@@ -134,14 +134,19 @@ export const verifyTransactionByMD5 = async (req, res) => {
         data.data?.status === 'SUCCESS' ||
         Boolean(data.hash);
 
-      const isRateLimited = (data.responseCode === 1 || data.errorCode === 1) &&
-        typeof data.responseMessage === 'string' &&
-        data.responseMessage.toLowerCase().includes('limit');
+      const isRateLimited = Boolean(
+        data.errorCode === 17 ||
+        data.errorCode === 1 ||
+        (typeof data.responseMessage === 'string' &&
+          (data.responseMessage.toLowerCase().includes('limit') ||
+           data.responseMessage.toLowerCase().includes('exceeded')))
+      );
 
       return res.json({
         success: isPaid,
         responseCode: data.responseCode ?? data.status?.code,
         responseMessage: data.responseMessage ?? data.status?.message,
+        errorCode: data.errorCode,
         isPaid,
         isRateLimited,
         data: data.data

@@ -73,6 +73,7 @@ export const Checkout = () => {
   // 'auto' = auto-poll bank & hide button | 'manual' = wait for user click to verify
   const [khqrMode, setKhqrMode] = useState('auto');
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+  const [apiLimitHit, setApiLimitHit] = useState(false);
 
   // Promo code input state
   const [inputPromoCode, setInputPromoCode] = useState('');
@@ -148,6 +149,7 @@ export const Checkout = () => {
     setKhqrTimeLeft(120);
     setKhqrPaid(false);
     setKhqrData(null);
+    setApiLimitHit(false);
 
     const billNumber = `PY-ORD-${Math.floor(1000 + Math.random() * 9000)}`;
     const res = await apiService.generateBakongKHQR({
@@ -170,6 +172,21 @@ export const Checkout = () => {
     if (!khqrData?.md5 || khqrPaid) return false;
     try {
       const res = await apiService.checkBakongTransaction(khqrData.md5);
+
+      // Detect Bakong API Rate Limit (100 calls/day exceeded)
+      if (res?.isRateLimited || res?.errorCode === 17) {
+        setApiLimitHit(true);
+        if (!silent) {
+          showToast(
+            isKm
+              ? '⚠️ Bakong Token ដល់ដែនកំណត់ ១០០ ដង/ថ្ងៃហើយ! សូមចុច "ខ្ញុំបានបាញ់ប្រាក់រួចហើយ" ខាងក្រោមដើម្បីបញ្ជូនការកុម្ម៉ង់។'
+              : 'Bakong developer token limit (100 req/day) exceeded! Click "I Have Paid" below to submit.',
+            'warning'
+          );
+        }
+        return false;
+      }
+
       const isPaid =
         res?.isPaid === true ||
         res?.success === true ||
@@ -178,6 +195,7 @@ export const Checkout = () => {
 
       if (isPaid) {
         setKhqrPaid(true);
+        setApiLimitHit(false);
         showToast(isKm ? '🎉 ការទូទាត់ជោគជ័យ! កំពុងបញ្ជូនការកុម្ម៉ង់...' : 'Payment verified successfully! Placing order...', 'success');
         setTimeout(() => {
           executeOrderCreation();
@@ -1131,6 +1149,52 @@ export const Checkout = () => {
                     </Button>
                   ) : !khqrPaid ? (
                     <div>
+                      {/* Bakong Developer Rate Limit Warning */}
+                      {apiLimitHit && (
+                        <div style={{
+                          backgroundColor: '#FFFBEB',
+                          border: '1.5px solid #FCD34D',
+                          borderRadius: '12px',
+                          padding: '10px 14px',
+                          marginBottom: '0.75rem',
+                          fontSize: '0.82rem',
+                          color: '#92400E',
+                          textAlign: 'left'
+                        }}>
+                          <div style={{ fontWeight: 700, marginBottom: '3px' }}>
+                            ⚠️ Bakong Token ដល់ដែនកំណត់ប្រចាំថ្ងៃ (NBC 100/Day Exceeded)
+                          </div>
+                          <div style={{ opacity: 0.9, lineHeight: 1.4, fontSize: '0.78rem' }}>
+                            {isKm
+                              ? 'ដោយសារកូតា Token របស់ធនាគារជាតិ NBC អស់ ១០០ ដង/ថ្ងៃ។ ប្រសិនបើលោកអ្នកបានផ្ទេរប្រាក់ពិតប្រាកដរួចហើយ សូមចុចប៊ូតុងខាងក្រោមដើម្បីបញ្ជូនការកុម្ម៉ង់។'
+                              : 'NBC Bakong developer token has exceeded its 100 requests/day limit. If you have already transferred funds, click below to submit.'}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setKhqrPaid(true);
+                              showToast(isKm ? '✅ បានទទួលការបញ្ជាក់ការទូទាត់! កំពុងបញ្ជូនការកុម្ម៉ង់...' : 'Payment recorded! Placing order...', 'success');
+                              setTimeout(() => executeOrderCreation(), 600);
+                            }}
+                            style={{
+                              marginTop: '8px',
+                              width: '100%',
+                              backgroundColor: '#16A34A',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '8px',
+                              padding: '10px',
+                              fontWeight: 700,
+                              fontSize: '0.88rem',
+                              cursor: 'pointer',
+                              boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)'
+                            }}
+                          >
+                            ✅ ខ្ញុំបានបាញ់ប្រាក់រួចហើយ (បញ្ជូនការកុម្ម៉ង់)
+                          </button>
+                        </div>
+                      )}
+
                       {/* Cycle/Pill-Shaped Segmented Tab Switch (Like Auth signin/signup) */}
                       <div
                         className="auth-segmented-nav"
