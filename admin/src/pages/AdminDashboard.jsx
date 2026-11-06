@@ -78,11 +78,9 @@ export const AdminDashboard = () => {
       await updateStoreSettings({
         ...storeSettings,
         isOpen: quickSettings.isOpen,
-        standardDeliveryFee: Number(quickSettings.standardDeliveryFee) || 0,
-        freeDeliveryThreshold: Number(quickSettings.freeDeliveryThreshold) || 0,
         khrRate: Number(quickSettings.khrRate) || 4100
       });
-      showToast(isKm ? 'បានរក្សាទុកការកំណត់រហ័សជោគជ័យ' : 'Quick settings saved successfully', 'success');
+      showToast(isKm ? 'បានរក្សាទុកអត្រាប្តូរប្រាក់ជោគជ័យ' : 'Exchange rate saved successfully', 'success');
     } catch (_) {
       showToast(isKm ? 'បរាជ័យក្នុងការរក្សាទុក' : 'Failed to save settings', 'error');
     } finally {
@@ -308,62 +306,6 @@ export const AdminDashboard = () => {
 
           {/* Quick Logistics Inputs */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            {/* Delivery Fee */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#334155', whiteSpace: 'nowrap' }}>
-                🛵 {isKm ? 'ថ្លៃដឹក :' : 'Delivery:'}
-              </span>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <span style={{ position: 'absolute', left: '7px', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8' }}>$</span>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  value={quickSettings.standardDeliveryFee}
-                  onChange={(e) => setQuickSettings((p) => ({ ...p, standardDeliveryFee: e.target.value }))}
-                  style={{
-                    width: '68px',
-                    padding: '4px 6px 4px 18px',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '6px',
-                    backgroundColor: '#f8fafc',
-                    color: '#0f172a'
-                  }}
-                  title={isKm ? 'ថ្លៃដឹកជញ្ជូនគោល' : 'Standard Delivery Fee'}
-                />
-              </div>
-            </div>
-
-            {/* Free Delivery Threshold */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#334155', whiteSpace: 'nowrap' }}>
-                🎁 {isKm ? 'ដឹកឥតគិតថ្លៃ >' : 'Free Over:'}
-              </span>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <span style={{ position: 'absolute', left: '7px', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8' }}>$</span>
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  value={quickSettings.freeDeliveryThreshold}
-                  onChange={(e) => setQuickSettings((p) => ({ ...p, freeDeliveryThreshold: e.target.value }))}
-                  style={{
-                    width: '68px',
-                    padding: '4px 6px 4px 18px',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '6px',
-                    backgroundColor: '#f8fafc',
-                    color: '#0f172a'
-                  }}
-                  title={isKm ? 'ដឹកឥតគិតថ្លៃសម្រាប់កម្ម៉ង់លើសពី' : 'Free Delivery Threshold'}
-                />
-              </div>
-            </div>
-
             {/* KHR Exchange Rate */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#334155', whiteSpace: 'nowrap' }}>
