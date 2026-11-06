@@ -16,8 +16,15 @@ export const getEffectiveDiscount = (dish, categoryDiscounts = {}) => {
 
   // 2. Category-level discount
   if (dish.category && categoryDiscounts) {
-    const catKey = String(dish.category).trim().toLowerCase();
-    const catDisc = Number(categoryDiscounts[catKey] || categoryDiscounts[dish.category]);
+    const rawCat = String(dish.category).trim();
+    const catKey = rawCat.toLowerCase();
+    const catDisc = Number(
+      categoryDiscounts[catKey] ||
+      categoryDiscounts[rawCat] ||
+      categoryDiscounts[catKey.replace(/^cat-/, '')] ||
+      categoryDiscounts[`cat-${catKey}`] ||
+      0
+    );
     if (!isNaN(catDisc) && catDisc > 0) {
       return Math.min(100, Math.max(0, catDisc));
     }

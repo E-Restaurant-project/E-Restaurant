@@ -22,16 +22,23 @@ const NON_SPICY_CATEGORIES = [
 ];
 
 const getDishQuery = (id) => {
-  if (id && mongoose.Types.ObjectId.isValid(id)) {
-    return { $or: [{ _id: id }, { dishId: id }] };
+  if (!id) return { _id: null };
+  const rawId = String(id).trim();
+  const or = [
+    { dishId: rawId },
+    { dishId: rawId.toLowerCase() },
+    { dishId: rawId.toUpperCase() }
+  ];
+  if (mongoose.Types.ObjectId.isValid(rawId)) {
+    or.unshift({ _id: rawId });
   }
-  return { dishId: id };
+  return { $or: or };
 };
 
 const getAdminInfo = (req) => {
   let name = req.user?.name || req.body?.adminName || req.query?.adminName;
   let email = req.user?.email || req.body?.adminEmail || req.query?.adminEmail;
-  let id = req.user?._id || req.body?.adminId || null;
+  let id = req.user?._id ? String(req.user._id) : (req.body?.adminId ? String(req.body.adminId) : null);
 
   if (!name || name === 'Admin') {
     if (req.body?.adminName) name = req.body.adminName;

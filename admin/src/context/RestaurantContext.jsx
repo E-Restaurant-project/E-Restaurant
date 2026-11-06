@@ -321,9 +321,9 @@ export const RestaurantProvider = ({ children }) => {
     const admin = getCurrentAdmin();
     const now = new Date().toISOString();
 
-    setDishes((prev) =>
-      prev.map((dish) => {
-        if (dish.id !== id && dish.dishId !== id) return dish;
+    setDishes((prev) => {
+      const next = prev.map((dish) => {
+        if (dish.id !== id && dish.dishId !== id && dish._id !== id) return dish;
         let khrVal = updatedFields.price_khr;
         let usdVal = updatedFields.price;
         if (khrVal !== undefined && usdVal === undefined) {
@@ -351,8 +351,13 @@ export const RestaurantProvider = ({ children }) => {
             at: now
           }
         };
-      })
-    );
+      });
+      try {
+        localStorage.setItem(API_CONFIG.STORAGE_KEYS.MENU, JSON.stringify(next));
+      } catch (_) {}
+      return next;
+    });
+
     try {
       const res = await apiService.updateDish(id, {
         ...updatedFields,
@@ -361,9 +366,18 @@ export const RestaurantProvider = ({ children }) => {
         adminId: admin.adminId
       });
       if (res && res.success && res.data) {
-        setDishes((prev) =>
-          prev.map((d) => (d.id === id || d.dishId === id ? { ...d, ...res.data } : d))
-        );
+        setDishes((prev) => {
+          const next = prev.map((d) =>
+            d.id === id || d.dishId === id || d._id === id
+              ? { ...d, ...res.data, id: res.data.dishId || res.data._id || d.id }
+              : d
+          );
+          try {
+            localStorage.setItem(API_CONFIG.STORAGE_KEYS.MENU, JSON.stringify(next));
+          } catch (_) {}
+          return next;
+        });
+        return res.data;
       }
     } catch (err) {
       console.warn('[RestaurantContext] updateDish error:', err);

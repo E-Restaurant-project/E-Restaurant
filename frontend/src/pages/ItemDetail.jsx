@@ -60,7 +60,17 @@ export const ItemDetail = () => {
   const showSpiceLevel = !isNonSpicyCategory(dish, catObj) && dish?.spice_level !== 'none';
 
   const handleAddToCart = () => {
-    addToCart(dish, quantity, showSpiceLevel ? spiceLevel : null, specialNotes);
+    addToCart(
+      {
+        ...dish,
+        price: effectiveDiscount > 0 ? discountedPrice : dish.price,
+        originalPrice: dish.price,
+        discountPercent: effectiveDiscount
+      },
+      quantity,
+      showSpiceLevel ? spiceLevel : null,
+      specialNotes
+    );
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 800);
   };

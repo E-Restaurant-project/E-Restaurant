@@ -32,10 +32,20 @@ export const updateSettings = async (req, res) => {
     if (!setting) {
       setting = await Setting.create(req.body);
     } else {
-      setting = await Setting.findByIdAndUpdate(setting._id, req.body, {
-        new: true,
-        runValidators: true
-      });
+      if (req.body.categoryDiscounts !== undefined) {
+        setting.categoryDiscounts = req.body.categoryDiscounts;
+        setting.markModified('categoryDiscounts');
+      }
+      if (req.body.announcement !== undefined) {
+        setting.announcement = { ...setting.announcement, ...req.body.announcement };
+        setting.markModified('announcement');
+      }
+      if (req.body.isOpen !== undefined) setting.isOpen = req.body.isOpen;
+      if (req.body.standardDeliveryFee !== undefined) setting.standardDeliveryFee = req.body.standardDeliveryFee;
+      if (req.body.freeDeliveryThreshold !== undefined) setting.freeDeliveryThreshold = req.body.freeDeliveryThreshold;
+      if (req.body.khrRate !== undefined) setting.khrRate = req.body.khrRate;
+
+      await setting.save();
     }
     res.json({ success: true, data: setting });
   } catch (error) {

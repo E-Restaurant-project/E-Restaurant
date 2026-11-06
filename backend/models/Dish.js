@@ -28,13 +28,13 @@ const dishSchema = new mongoose.Schema(
     ingredients_km: [{ type: String }],
     ingredients_en: [{ type: String }],
     createdBy: {
-      id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      id: { type: mongoose.Schema.Types.Mixed, default: null },
       name: { type: String, default: 'Admin' },
       email: { type: String, default: '' },
       at: { type: Date, default: Date.now }
     },
     updatedBy: {
-      id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      id: { type: mongoose.Schema.Types.Mixed, default: null },
       name: { type: String, default: 'Admin' },
       email: { type: String, default: '' },
       at: { type: Date, default: Date.now }
@@ -44,7 +44,7 @@ const dishSchema = new mongoose.Schema(
         action: { type: String, required: true },
         adminName: { type: String, default: 'Admin' },
         adminEmail: { type: String, default: '' },
-        adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        adminId: { type: mongoose.Schema.Types.Mixed, default: null },
         details: { type: String, default: '' },
         at: { type: Date, default: Date.now }
       }
