@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Save, AlertCircle, Megaphone, DollarSign, Power } from 'lucide-react';
+import { Settings, Save, AlertCircle, DollarSign, Power } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useRestaurant } from '../hooks/useRestaurant';
 import { useToast } from '../hooks/useToast';
@@ -7,7 +7,7 @@ import { Button } from '../components/common/Button';
 
 export const AdminSettings = () => {
   const { t, language } = useLanguage();
-  const { storeSettings, updateStoreSettings, promoCodes = [] } = useRestaurant();
+  const { storeSettings, updateStoreSettings } = useRestaurant();
   const { showToast } = useToast();
   const isKm = language === 'km';
 
@@ -15,32 +15,18 @@ export const AdminSettings = () => {
     isOpen: storeSettings.isOpen ?? true,
     standardDeliveryFee: storeSettings.standardDeliveryFee ?? 1.50,
     freeDeliveryThreshold: storeSettings.freeDeliveryThreshold ?? 25.00,
-    khrRate: storeSettings.khrRate ?? 4100,
-    announcement: {
-      active: storeSettings.announcement?.active ?? true,
-      text_km: storeSettings.announcement?.text_km ?? '',
-      text_en: storeSettings.announcement?.text_en ?? ''
-    }
+    khrRate: storeSettings.khrRate ?? 4100
   });
 
   const handleChange = (field, val) => {
     setSettings((prev) => ({ ...prev, [field]: val }));
   };
 
-  const handleAnnouncementChange = (field, val) => {
-    setSettings((prev) => ({
-      ...prev,
-      announcement: {
-        ...prev.announcement,
-        [field]: val
-      }
-    }));
-  };
-
   const handleSave = (e) => {
     e.preventDefault();
     updateStoreSettings({
-      ...settings,
+      ...storeSettings,
+      isOpen: settings.isOpen,
       standardDeliveryFee: Number(settings.standardDeliveryFee),
       freeDeliveryThreshold: Number(settings.freeDeliveryThreshold),
       khrRate: Number(settings.khrRate)
@@ -124,49 +110,6 @@ export const AdminSettings = () => {
                   className="form-input"
                   value={settings.khrRate}
                   onChange={(e) => handleChange('khrRate', e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* 3. Announcement Banner */}
-            <div style={{ marginBottom: 'var(--space-2xl)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--space-md)' }}>
-                <Megaphone size={20} color="var(--color-primary)" />
-                <h3 style={{ color: 'var(--color-primary-dark)' }}>Live Announcement Banner</h3>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--space-md)' }}>
-                <input
-                  type="checkbox"
-                  id="banner_toggle"
-                  checked={settings.announcement.active}
-                  onChange={(e) => handleAnnouncementChange('active', e.target.checked)}
-                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--color-primary, #881337)' }}
-                />
-                <label htmlFor="banner_toggle" style={{ fontWeight: 600, cursor: 'pointer' }}>
-                  {t('admin.settings_banner_active')}
-                </label>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">{t('admin.settings_banner_text_km')}</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={settings.announcement.text_km}
-                  onChange={(e) => handleAnnouncementChange('text_km', e.target.value)}
-                  placeholder="សារជូនដំណឹងជាភាសាខ្មែរ..."
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">{t('admin.settings_banner_text_en')}</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={settings.announcement.text_en}
-                  onChange={(e) => handleAnnouncementChange('text_en', e.target.value)}
-                  placeholder="Announcement text in English..."
                 />
               </div>
             </div>
