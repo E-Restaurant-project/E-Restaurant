@@ -14,7 +14,8 @@ import {
   Check,
   RefreshCw,
   Edit2,
-  Megaphone
+  Megaphone,
+  X
 } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useRestaurant } from '../hooks/useRestaurant';
@@ -179,27 +180,81 @@ export const AdminPromos = () => {
     setPromoToEdit(null);
   };
 
+  // Check if promo is currently the active featured banner on customer side
+  const isPromoFeaturedOnBanner = (promo) => {
+    if (!storeSettings?.announcement?.active) return false;
+    if (storeSettings?.announcement?.featuredCode) {
+      return String(storeSettings.announcement.featuredCode).toUpperCase() === String(promo.code).toUpperCase();
+    }
+    const km = String(storeSettings?.announcement?.text_km || '').toUpperCase();
+    const en = String(storeSettings?.announcement?.text_en || '').toUpperCase();
+    const code = String(promo.code || '').toUpperCase();
+    return km.includes(code) || en.includes(code);
+  };
+
   // 1-Click Feature on Top Announcement Banner
   const handleFeatureOnBanner = async (promo) => {
     try {
-      const bannerKm = `ប្រើប្រាស់កូដប៊ូន ${promo.code} ដើម្បីទទួលបានការបញ្ចុះតម្លៃ ${promo.discount}% គ្រប់មុខទំនិញទាំងអស់`;
+      const bannerKm = `ប្រើប្រាស់កូដ VIP ឬ ${promo.code} ដើម្បីទទួលបានការបញ្ចុះតម្លៃ ${promo.discount}% គ្រប់មុខទំនិញទាំងអស់`;
       const bannerEn = `Use coupon ${promo.code} to get a ${promo.discount}% discount on all items.`;
       await updateStoreSettings({
         ...storeSettings,
         announcement: {
           active: true,
+          featuredCode: promo.code,
           text_km: bannerKm,
           text_en: bannerEn
         }
       });
       showToast(
         isKm
-          ? `បានដាក់ផ្សាយកូដ ${promo.code} (-${promo.discount}%) លើរបារប្រកាសជោគជ័យ!`
-          : `Featured ${promo.code} (-${promo.discount}%) on Announcement Banner!`,
+          ? `បានដាក់ផ្សាយកូដ ${promo.code} (-${promo.discount}%) លើរបារប្រកាសរបស់អតិថិជនជោគជ័យ!`
+          : `Featured ${promo.code} (-${promo.discount}%) on Customer Announcement Banner!`,
         'success'
       );
     } catch (_) {
       showToast(isKm ? 'មិនអាចដាក់ផ្សាយបានទេ' : 'Failed to update banner', 'error');
+    }
+  };
+
+  // Turn off or remove promo from banner
+  const handleRemoveFromBanner = async () => {
+    try {
+      await updateStoreSettings({
+        ...storeSettings,
+        announcement: {
+          ...storeSettings?.announcement,
+          active: false,
+          featuredCode: ''
+        }
+      });
+      showToast(
+        isKm ? 'បានដកកូដចេញពីរបារប្រកាស Banner អតិថិជនរួចរាល់' : 'Announcement banner deactivated',
+        'info'
+      );
+    } catch (_) {
+      showToast(isKm ? 'បរាជ័យក្នុងការបិទ Banner' : 'Failed to turn off banner', 'error');
+    }
+  };
+
+  const handleToggleBannerActive = async () => {
+    try {
+      const nextActive = !storeSettings?.announcement?.active;
+      await updateStoreSettings({
+        ...storeSettings,
+        announcement: {
+          ...storeSettings?.announcement,
+          active: nextActive
+        }
+      });
+      showToast(
+        nextActive
+          ? (isKm ? 'បានបើកបង្ហាញ Banner លើគេហទំព័រអតិថិជន' : 'Customer banner is now LIVE')
+          : (isKm ? 'បានបិទការបង្ហាញ Banner លើគេហទំព័រអតិថិជន' : 'Customer banner is now OFF'),
+        nextActive ? 'success' : 'info'
+      );
+    } catch (_) {
+      showToast(isKm ? 'បរាជ័យ' : 'Failed to toggle banner', 'error');
     }
   };
 
@@ -650,7 +705,17 @@ export const AdminPromos = () => {
                           </div>
                           {catDiscount > 0 && currentDishDisc === 0 && (
                             <span style={{ fontSize: '0.72rem', color: '#d97706', display: 'block', marginTop: '4px', fontWeight: 600 }}>
-                              🔥 Inheriting Category Deal: -{catDiscount}%
+                              🔥 {isKm ? `បញ្ចុះតាមប្រភេទ: -${catDiscount}%` : `Category Deal: -${catDiscount}%`}
+                            </span>
+                          )}
+                          {catDiscount > 0 && currentDishDisc > 0 && (
+                            <span style={{ fontSize: '0.72rem', color: '#16a34a', display: 'block', marginTop: '4px', fontWeight: 700 }}>
+                              ⚡ {isKm ? `បូកបញ្ចូលគ្នា: មុខម្ហូប ${currentDishDisc}% + ប្រភេទ ${catDiscount}% = ${effectiveDisc}%` : `Stacked: Dish ${currentDishDisc}% + Cat ${catDiscount}% = ${effectiveDisc}%`}
+                            </span>
+                          )}
+                          {catDiscount === 0 && currentDishDisc > 0 && (
+                            <span style={{ fontSize: '0.72rem', color: '#dc2626', display: 'block', marginTop: '4px', fontWeight: 600 }}>
+                              🎯 {isKm ? `បញ្ចុះតាមមុខម្ហូប: -${currentDishDisc}%` : `Dish Deal: -${currentDishDisc}%`}
                             </span>
                           )}
                         </td>
@@ -715,6 +780,83 @@ export const AdminPromos = () => {
               </span>
             </div>
 
+            {/* Live Customer Announcement Banner Status Box */}
+            <div
+              style={{
+                margin: '0 var(--space-xl) var(--space-lg)',
+                padding: '12px 16px',
+                borderRadius: '10px',
+                border: storeSettings?.announcement?.active ? '1.5px solid #fde68a' : '1px solid #e2e8f0',
+                backgroundColor: storeSettings?.announcement?.active ? '#fffbeb' : '#f8fafc',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '8px',
+                    backgroundColor: storeSettings?.announcement?.active ? '#fef3c7' : '#e2e8f0',
+                    color: storeSettings?.announcement?.active ? '#b45309' : '#64748b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <Megaphone size={18} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1e293b' }}>
+                      {isKm ? 'របារប្រកាសលើគេហទំព័រអតិថិជន (Live Customer Banner) :' : 'Live Customer Announcement Banner :'}
+                    </span>
+                    {storeSettings?.announcement?.active ? (
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, backgroundColor: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
+                        🟢 {isKm ? 'កំពុងបើកបង្ហាញលើ App' : 'ACTIVE ON CUSTOMER APP'}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, backgroundColor: '#fee2e2', color: '#b91c1c', padding: '2px 8px', borderRadius: '12px', border: '1px solid #fecaca' }}>
+                        ⚪ {isKm ? 'បានបិទការបង្ហាញ' : 'BANNER INACTIVE'}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: '#475569', marginTop: '2px', fontWeight: 500 }}>
+                    {isKm
+                      ? (storeSettings?.announcement?.text_km || 'គ្មានសារប្រកាស')
+                      : (storeSettings?.announcement?.text_en || 'No announcement message')}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={handleToggleBannerActive}
+                  style={{
+                    padding: '5px 12px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    borderRadius: '6px',
+                    border: '1px solid',
+                    borderColor: storeSettings?.announcement?.active ? '#f87171' : '#15803d',
+                    backgroundColor: storeSettings?.announcement?.active ? '#fff' : '#15803d',
+                    color: storeSettings?.announcement?.active ? '#b91c1c' : '#fff',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {storeSettings?.announcement?.active
+                    ? (isKm ? '🚫 បិទ Banner' : 'Turn Off Banner')
+                    : (isKm ? '✅ បើកបង្ហាញ Banner' : 'Turn On Banner')}
+                </button>
+              </div>
+            </div>
+
             <div className="admin-table-container">
               <table className="admin-table">
                 <thead>
@@ -728,80 +870,136 @@ export const AdminPromos = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {promoCodes.map((p) => (
-                    <tr key={p.id}>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <Tag size={16} color="var(--color-primary)" />
-                          <strong style={{ fontSize: '1.05rem', color: 'var(--color-primary-dark)', letterSpacing: '0.05em' }}>
-                            {p.code}
-                          </strong>
-                        </div>
-                      </td>
-                      <td style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--color-accent)' }}>
-                        {p.discount}% OFF
-                      </td>
-                      <td>{p.description || 'Special Promotion'}</td>
-                      <td>
-                        {p.active ? (
-                          <Badge variant="success">
-                            <CheckCircle2 size={12} />
-                            <span>{t('admin.promo_active')}</span>
-                          </Badge>
-                        ) : (
-                          <Badge variant="danger">
-                            <XCircle size={12} />
-                            <span>{t('admin.promo_inactive')}</span>
-                          </Badge>
-                        )}
-                      </td>
-                      <td>
-                        <button
-                          type="button"
-                          className={`btn btn--sm ${p.active ? 'btn--outline' : 'btn--secondary'}`}
-                          onClick={() => handleToggleActive(p)}
-                          style={{ fontSize: '0.75rem', padding: '4px 10px' }}
-                        >
-                          {p.active ? 'Deactivate' : 'Activate'}
-                        </button>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {promoCodes.map((p) => {
+                    const isFeatured = isPromoFeaturedOnBanner(p);
+                    return (
+                      <tr key={p.id} style={{ backgroundColor: isFeatured ? '#fffbeb' : undefined }}>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Tag size={16} color="var(--color-primary)" />
+                              <strong style={{ fontSize: '1.05rem', color: 'var(--color-primary-dark)', letterSpacing: '0.05em' }}>
+                                {p.code}
+                              </strong>
+                            </div>
+                            {isFeatured && (
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  backgroundColor: '#fef3c7',
+                                  color: '#92400e',
+                                  border: '1px solid #fde68a',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  padding: '2px 8px',
+                                  borderRadius: '12px'
+                                }}
+                              >
+                                <Megaphone size={11} />
+                                {isKm ? 'កំពុងផ្សាយលើ Banner' : 'Live on Banner'}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--color-accent)' }}>
+                          {p.discount}% OFF
+                        </td>
+                        <td>{p.description || 'Special Promotion'}</td>
+                        <td>
+                          {p.active ? (
+                            <Badge variant="success">
+                              <CheckCircle2 size={12} />
+                              <span>{t('admin.promo_active')}</span>
+                            </Badge>
+                          ) : (
+                            <Badge variant="danger">
+                              <XCircle size={12} />
+                              <span>{t('admin.promo_inactive')}</span>
+                            </Badge>
+                          )}
+                        </td>
+                        <td>
                           <button
                             type="button"
-                            className="btn btn--outline btn--sm"
-                            onClick={() => handleOpenEdit(p)}
-                            style={{ fontSize: '0.75rem', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                            title={isKm ? 'កែប្រែ % ឬកូដ' : 'Edit discount % or code'}
+                            className={`btn btn--sm ${p.active ? 'btn--outline' : 'btn--secondary'}`}
+                            onClick={() => handleToggleActive(p)}
+                            style={{ fontSize: '0.75rem', padding: '4px 10px' }}
                           >
-                            <Edit2 size={13} />
-                            <span>{isKm ? 'កែប្រែ' : 'Edit'}</span>
+                            {p.active ? 'Deactivate' : 'Activate'}
                           </button>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <button
+                              type="button"
+                              className="btn btn--outline btn--sm"
+                              onClick={() => handleOpenEdit(p)}
+                              style={{ fontSize: '0.75rem', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              title={isKm ? 'កែប្រែ % ឬកូដ' : 'Edit discount % or code'}
+                            >
+                              <Edit2 size={13} />
+                              <span>{isKm ? 'កែប្រែ' : 'Edit'}</span>
+                            </button>
 
-                          <button
-                            type="button"
-                            className="btn btn--ghost btn--sm"
-                            onClick={() => handleFeatureOnBanner(p)}
-                            style={{ fontSize: '0.75rem', padding: '4px 8px', color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                            title={isKm ? 'ដាក់បង្ហាញលើរបារប្រកាសលើកំពូលគេហទំព័រ' : 'Display this promo on announcement banner'}
-                          >
-                            <Megaphone size={14} />
-                            <span>{isKm ? 'ដាក់លើ Banner' : 'To Banner'}</span>
-                          </button>
+                            {isFeatured ? (
+                              <button
+                                type="button"
+                                className="btn btn--sm"
+                                onClick={handleRemoveFromBanner}
+                                style={{
+                                  fontSize: '0.75rem',
+                                  padding: '4px 8px',
+                                  backgroundColor: '#fee2e2',
+                                  color: '#b91c1c',
+                                  border: '1px solid #fca5a5',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  cursor: 'pointer'
+                                }}
+                                title={isKm ? 'ដកចេញពីរបារប្រកាសលើកំពូលគេហទំព័រ' : 'Remove from top announcement banner'}
+                              >
+                                <X size={13} />
+                                <span>{isKm ? 'ដកពី Banner' : 'Remove Banner'}</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="btn btn--outline btn--sm"
+                                onClick={() => handleFeatureOnBanner(p)}
+                                style={{
+                                  fontSize: '0.75rem',
+                                  padding: '4px 8px',
+                                  color: 'var(--color-primary)',
+                                  borderColor: 'var(--color-primary)',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  cursor: 'pointer'
+                                }}
+                                title={isKm ? 'ដាក់បង្ហាញលើរបារប្រកាសលើកំពូលគេហទំព័រ' : 'Display this promo on announcement banner'}
+                              >
+                                <Megaphone size={13} />
+                                <span>{isKm ? 'ដាក់លើ Banner' : 'To Banner'}</span>
+                              </button>
+                            )}
 
-                          <button
-                            type="button"
-                            className="btn btn--ghost btn--sm"
-                            onClick={() => handleDelete(p)}
-                            style={{ color: 'var(--color-danger)' }}
-                            title="Delete code"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            <button
+                              type="button"
+                              className="btn btn--ghost btn--sm"
+                              onClick={() => handleDelete(p)}
+                              style={{ color: 'var(--color-danger)' }}
+                              title="Delete code"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

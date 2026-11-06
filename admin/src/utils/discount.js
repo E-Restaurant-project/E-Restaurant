@@ -1,36 +1,38 @@
 /**
- * Discount utility functions for Phum Yeung Admin Portal
- * Supports both Product-level (per-dish) and Category-level discounts.
+ * Discount utility functions for Phum Yeung Restaurant
+ * Supports Additive Stacking of Category-level & Product-level (per-dish) discounts.
+ * E.g., Category 10% + Dish 10% = 20% total discount.
  */
 
-export const getEffectiveDiscount = (dish, categoryDiscounts = {}) => {
-  if (!dish) return 0;
+export const getDiscountBreakdown = (dish, categoryDiscounts = {}) => {
+  if (!dish) return { dishDisc: 0, catDisc: 0, total: 0 };
 
-  // 1. Dish-specific discount takes first priority if configured
+  let dishDisc = 0;
   if (dish.discount_percent !== undefined && dish.discount_percent !== null) {
-    const dishDisc = Number(dish.discount_percent);
-    if (!isNaN(dishDisc) && dishDisc > 0) {
-      return Math.min(100, Math.max(0, dishDisc));
-    }
+    const d = Number(dish.discount_percent);
+    if (!isNaN(d) && d > 0) dishDisc = d;
   }
 
-  // 2. Category-level discount
+  let catDisc = 0;
   if (dish.category && categoryDiscounts) {
     const rawCat = String(dish.category).trim();
     const catKey = rawCat.toLowerCase();
-    const catDisc = Number(
+    const c = Number(
       categoryDiscounts[catKey] ||
       categoryDiscounts[rawCat] ||
       categoryDiscounts[catKey.replace(/^cat-/, '')] ||
       categoryDiscounts[`cat-${catKey}`] ||
       0
     );
-    if (!isNaN(catDisc) && catDisc > 0) {
-      return Math.min(100, Math.max(0, catDisc));
-    }
+    if (!isNaN(c) && c > 0) catDisc = c;
   }
 
-  return 0;
+  const total = Math.min(90, Math.max(0, Math.round(dishDisc + catDisc)));
+  return { dishDisc, catDisc, total };
+};
+
+export const getEffectiveDiscount = (dish, categoryDiscounts = {}) => {
+  return getDiscountBreakdown(dish, categoryDiscounts).total;
 };
 
 export const getDiscountedPrice = (dish, categoryDiscounts = {}) => {

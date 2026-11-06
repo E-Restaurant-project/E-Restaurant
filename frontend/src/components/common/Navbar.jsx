@@ -29,29 +29,31 @@ export const Navbar = () => {
   const closeMobile = () => setMobileOpen(false);
 
   const announcementText = isKm
-    ? storeSettings?.announcement?.text_km
-    : storeSettings?.announcement?.text_en;
+    ? (storeSettings?.announcement?.text_km || storeSettings?.announcement?.text_en)
+    : (storeSettings?.announcement?.text_en || storeSettings?.announcement?.text_km);
+  const isBannerActive = storeSettings?.announcement?.active !== false && Boolean(storeSettings?.announcement?.active);
 
   return (
     <>
       {/* Top Announcement Banner */}
-      {storeSettings?.announcement?.active && announcementText && (
+      {isBannerActive && announcementText && (
         <div
           style={{
-            backgroundColor: 'var(--color-secondary-dark)',
+            backgroundColor: 'var(--color-primary, #881337)',
             color: '#fff',
-            fontSize: '0.85rem',
+            fontSize: '0.86rem',
             fontWeight: 600,
-            padding: '6px 16px',
+            padding: '7px 16px',
             textAlign: 'center',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px',
-            letterSpacing: '0.02em'
+            letterSpacing: '0.02em',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.1)'
           }}
         >
-          <span>{announcementText}</span>
+          <span>📢 {announcementText}</span>
         </div>
       )}
 

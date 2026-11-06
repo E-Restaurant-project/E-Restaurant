@@ -224,7 +224,8 @@ export const RestaurantProvider = ({ children }) => {
 
   useEffect(() => {
     localStorage.setItem('phum_yeung_promos', JSON.stringify(promoCodes));
-  }, [promoCodes]);
+    syncChannel?.postMessage({ type: 'PROMOS_UPDATED', promoCodes });
+  }, [promoCodes, syncChannel]);
 
   // Helper to read active admin from auth storage
   const getCurrentAdmin = () => {

@@ -209,6 +209,9 @@ export const RestaurantProvider = ({ children }) => {
       if (e.data?.type === 'DISHES_UPDATED' && Array.isArray(e.data.dishes)) {
         setDishes(e.data.dishes);
       }
+      if (e.data?.type === 'PROMOS_UPDATED' && Array.isArray(e.data.promoCodes)) {
+        setPromoCodes(e.data.promoCodes);
+      }
     };
     syncChannel.addEventListener('message', handleMsg);
     return () => syncChannel.removeEventListener('message', handleMsg);

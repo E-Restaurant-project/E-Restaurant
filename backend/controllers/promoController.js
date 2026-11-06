@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Promo } from '../models/Promo.js';
 
 // @desc    Get all promos
@@ -50,11 +51,19 @@ export const createPromo = async (req, res) => {
 export const updatePromo = async (req, res) => {
   try {
     const rawId = req.params.id;
+    const updateData = { ...req.body };
+    if (updateData.code) {
+      updateData.code = String(updateData.code).trim().toUpperCase();
+    }
+    if (updateData.discount !== undefined) {
+      updateData.discount = Number(updateData.discount);
+    }
+
     const query = mongoose.Types.ObjectId.isValid(rawId)
       ? { $or: [{ _id: rawId }, { code: String(rawId).toUpperCase() }] }
       : { code: String(rawId).toUpperCase() };
 
-    const promo = await Promo.findOneAndUpdate(query, req.body, {
+    const promo = await Promo.findOneAndUpdate(query, updateData, {
       new: true,
       runValidators: true
     });
