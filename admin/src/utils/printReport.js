@@ -245,38 +245,25 @@ export const printOrdersReport = ({
 
         .summary-table {
           width: 100%;
-          border-collapse: separate;
-          border-spacing: 8px 0;
-          margin-bottom: 14px;
+          border-collapse: collapse;
+          margin-bottom: 16px;
         }
 
-        .card {
-          padding: 8px 10px;
-          border-radius: 6px;
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          vertical-align: top;
+        .summary-table th {
+          background-color: #881337 !important;
+          color: #ffffff !important;
+          font-weight: 700;
+          text-align: center;
+          padding: 7px 6px;
+          border: 1px solid #6b0f2a;
+          font-size: 10.5px;
         }
 
-        .card-label {
-          font-size: 9.5px;
-          color: #64748b;
-          font-weight: 600;
-          margin-bottom: 2px;
-        }
-
-        .card-value {
-          font-size: 15px;
-          font-weight: 800;
-          color: #0f172a;
-        }
-
-        .card--primary {
-          background: #fff1f2;
-          border-color: #fecdd3;
-        }
-        .card--primary .card-value {
-          color: #881337;
+        .summary-table td {
+          padding: 8px 6px;
+          border: 1px solid #cbd5e1;
+          text-align: center;
+          font-size: 11.5px;
         }
 
         .report-table {
@@ -351,37 +338,30 @@ export const printOrdersReport = ({
         </div>
       </div>
 
-      <!-- KPI Summary Table (Excel & Print Table Layout) -->
-      <table class="summary-table" style="width: 100%; border-collapse: separate; border-spacing: 8px 0; margin-bottom: 14px;">
-        <tr>
-          <!-- 1. Total Revenue Card -->
-          <td class="card card--primary" bgcolor="#fff1f2" style="width: 25%; padding: 8px 10px; border-radius: 6px; background-color: #fff1f2; border: 1px solid #fecdd3; vertical-align: top;">
-            <div class="card-label" style="font-size: 9.5px; color: #64748b; font-weight: 600; margin-bottom: 2px;">${isKm ? 'ចំណូលសរុប (Revenue)' : 'Total Revenue'}</div>
-            <div class="card-value" style="font-size: 15px; font-weight: 800; color: #881337;">$${totalUSD.toFixed(2)}</div>
-            <div style="font-size: 9px; color: #be123c; margin-top: 1px;">≈ ${totalKHR.toLocaleString()} ៛</div>
-          </td>
-
-          <!-- 2. Total Orders Card -->
-          <td class="card" bgcolor="#f8fafc" style="width: 25%; padding: 8px 10px; border-radius: 6px; background-color: #f8fafc; border: 1px solid #e2e8f0; vertical-align: top;">
-            <div class="card-label" style="font-size: 9.5px; color: #64748b; font-weight: 600; margin-bottom: 2px;">${isKm ? 'ចំនួនកុម្ម៉ង់សរុប' : 'Total Orders'}</div>
-            <div class="card-value" style="font-size: 15px; font-weight: 800; color: #0f172a;">${totalCount}</div>
-            <div style="font-size: 9px; color: #64748b; margin-top: 1px;">${isKm ? 'តាមតម្រងបច្ចុប្បន្ន' : 'Filtered'}</div>
-          </td>
-
-          <!-- 3. Completed Orders Card -->
-          <td class="card" bgcolor="#f0fdf4" style="width: 25%; padding: 8px 10px; border-radius: 6px; background-color: #f0fdf4; border: 1px solid #bbf7d0; vertical-align: top;">
-            <div class="card-label" style="font-size: 9.5px; color: #64748b; font-weight: 600; margin-bottom: 2px;">${isKm ? 'ការកុម្ម៉ង់បានបញ្ចប់' : 'Completed'}</div>
-            <div class="card-value" style="font-size: 15px; font-weight: 800; color: #15803d;">${completedOrders.length}</div>
-            <div style="font-size: 9px; color: #15803d; margin-top: 1px;">${totalCount > 0 ? Math.round((completedOrders.length / totalCount) * 100) : 0}% ${isKm ? 'ជោគជ័យ' : 'Success'}</div>
-          </td>
-
-          <!-- 4. Pending / Cooking Card -->
-          <td class="card" bgcolor="#fffbeb" style="width: 25%; padding: 8px 10px; border-radius: 6px; background-color: #fffbeb; border: 1px solid #fef3c7; vertical-align: top;">
-            <div class="card-label" style="font-size: 9.5px; color: #64748b; font-weight: 600; margin-bottom: 2px;">${isKm ? 'កំពុងដំណើរការ/រង់ចាំ' : 'Pending / Cooking'}</div>
-            <div class="card-value" style="font-size: 15px; font-weight: 800; color: #b45309;">${pendingOrders.length}</div>
-            <div style="font-size: 9px; color: #b45309; margin-top: 1px;">${isKm ? 'ត្រូវការតាមដាន' : 'Active'}</div>
-          </td>
-        </tr>
+      <!-- KPI Summary Table (Real, Standard Structured Table) -->
+      <table class="summary-table" style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
+        <thead>
+          <tr bgcolor="#881337" style="background-color: #881337; color: #ffffff;">
+            <th style="border: 1px solid #6b0f2a; padding: 7px 6px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'ចំណូលសរុប (USD)' : 'Total Revenue ($)'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 7px 6px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'ចំណូលជាប្រាក់រៀល' : 'Total Revenue (KHR)'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 7px 6px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'កុម្ម៉ង់សរុប' : 'Total Orders'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 7px 6px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'បានប្រគល់ (Completed)' : 'Completed'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 7px 6px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'កំពុងដំណើរការ' : 'In Progress'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 7px 6px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'បានបោះបង់' : 'Cancelled'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 7px 6px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'អត្រាជោគជ័យ' : 'Success Rate'}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td align="center" bgcolor="#fff1f2" style="border: 1px solid #cbd5e1; padding: 8px 6px; font-weight: 800; font-size: 13px; color: #881337; background-color: #fff1f2;">$${totalUSD.toFixed(2)}</td>
+            <td align="center" bgcolor="#fff1f2" style="border: 1px solid #cbd5e1; padding: 8px 6px; font-weight: 700; font-size: 11px; color: #be123c; background-color: #fff1f2;">${totalKHR.toLocaleString()} ៛</td>
+            <td align="center" bgcolor="#f8fafc" style="border: 1px solid #cbd5e1; padding: 8px 6px; font-weight: 800; font-size: 13px; color: #0f172a; background-color: #f8fafc;">${totalCount}</td>
+            <td align="center" bgcolor="#f0fdf4" style="border: 1px solid #cbd5e1; padding: 8px 6px; font-weight: 800; font-size: 13px; color: #15803d; background-color: #f0fdf4;">${completedOrders.length}</td>
+            <td align="center" bgcolor="#fffbeb" style="border: 1px solid #cbd5e1; padding: 8px 6px; font-weight: 800; font-size: 13px; color: #b45309; background-color: #fffbeb;">${pendingOrders.length}</td>
+            <td align="center" bgcolor="#fef2f2" style="border: 1px solid #cbd5e1; padding: 8px 6px; font-weight: 800; font-size: 13px; color: #b91c1c; background-color: #fef2f2;">${cancelledOrders.length}</td>
+            <td align="center" bgcolor="#f0fdf4" style="border: 1px solid #cbd5e1; padding: 8px 6px; font-weight: 800; font-size: 12px; color: #15803d; background-color: #f0fdf4;">${totalCount > 0 ? Math.round((completedOrders.length / totalCount) * 100) : 0}%</td>
+          </tr>
+        </tbody>
       </table>
 
       <!-- Orders Data Table with Elegant Burgundy Header -->
@@ -631,38 +611,30 @@ export const exportOrdersReportToExcel = ({
         <tr><td colspan="10" style="height: 12px;"></td></tr>
       </table>
 
-      <!-- KPI Summary Table (Excel-compatible HTML table with colors) -->
+      <!-- KPI Summary Table (Real Standard Table Layout for Excel) -->
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
-        <tr>
-          <!-- Total Revenue Card -->
-          <td colspan="2" bgcolor="#fff1f2" style="border: 2px solid #fecdd3; padding: 10px; vertical-align: top;">
-            <div style="font-size: 9.5pt; color: #64748b; font-weight: bold;">${isKm ? 'ចំណូលសរុប (Total Revenue)' : 'Total Revenue'}</div>
-            <div style="font-size: 16pt; font-weight: 800; color: #881337;">$${totalUSD.toFixed(2)}</div>
-            <div style="font-size: 9pt; color: #be123c;">≈ ${totalKHR.toLocaleString()} ៛</div>
-          </td>
-          <td style="width: 15px;"></td>
-          <!-- Total Orders Card -->
-          <td colspan="2" bgcolor="#f8fafc" style="border: 2px solid #cbd5e1; padding: 10px; vertical-align: top;">
-            <div style="font-size: 9.5pt; color: #64748b; font-weight: bold;">${isKm ? 'ចំនួនកុម្ម៉ង់សរុប (Total Orders)' : 'Total Orders'}</div>
-            <div style="font-size: 16pt; font-weight: 800; color: #0f172a;">${totalCount}</div>
-            <div style="font-size: 9pt; color: #64748b;">${isKm ? 'តាមការជ្រើសរើស' : 'Selected'}</div>
-          </td>
-          <td style="width: 15px;"></td>
-          <!-- Completed Card -->
-          <td colspan="2" bgcolor="#f0fdf4" style="border: 2px solid #bbf7d0; padding: 10px; vertical-align: top;">
-            <div style="font-size: 9.5pt; color: #64748b; font-weight: bold;">${isKm ? 'ការកុម្ម៉ង់បានបញ្ចប់ (Completed)' : 'Completed'}</div>
-            <div style="font-size: 16pt; font-weight: 800; color: #15803d;">${completedOrders.length}</div>
-            <div style="font-size: 9pt; color: #15803d;">${totalCount > 0 ? Math.round((completedOrders.length / totalCount) * 100) : 0}% ${isKm ? 'ជោគជ័យ' : 'Success'}</div>
-          </td>
-          <td style="width: 15px;"></td>
-          <!-- Pending / Cooking Card -->
-          <td colspan="2" bgcolor="#fffbeb" style="border: 2px solid #fef3c7; padding: 10px; vertical-align: top;">
-            <div style="font-size: 9.5pt; color: #64748b; font-weight: bold;">${isKm ? 'កំពុងដំណើរការ (Pending / Cooking)' : 'Pending / Cooking'}</div>
-            <div style="font-size: 16pt; font-weight: 800; color: #b45309;">${pendingOrders.length}</div>
-            <div style="font-size: 9pt; color: #b45309;">${isKm ? 'ត្រូវការតាមដាន' : 'Active'}</div>
-          </td>
-        </tr>
-        <tr><td colspan="10" style="height: 14px;"></td></tr>
+        <thead>
+          <tr bgcolor="#881337">
+            <th colspan="2" style="border: 1px solid #6b0f2a; padding: 7px 8px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'ចំណូលសរុប (USD)' : 'Total Revenue (USD)'}</th>
+            <th colspan="2" style="border: 1px solid #6b0f2a; padding: 7px 8px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'ចំណូលជាប្រាក់រៀល (KHR)' : 'Total Revenue (KHR)'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 7px 8px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'កុម្ម៉ង់សរុប' : 'Total Orders'}</th>
+            <th colspan="2" style="border: 1px solid #6b0f2a; padding: 7px 8px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'បានប្រគល់ (Completed)' : 'Completed'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 7px 8px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'កំពុងដំណើរការ' : 'In Progress'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 7px 8px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'បានបោះបង់' : 'Cancelled'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 7px 8px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'អត្រាជោគជ័យ' : 'Success Rate'}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="2" align="center" bgcolor="#fff1f2" style="border: 1px solid #cbd5e1; padding: 8px; font-weight: bold; font-size: 13pt; color: #881337;">$${totalUSD.toFixed(2)}</td>
+            <td colspan="2" align="center" bgcolor="#fff1f2" style="border: 1px solid #cbd5e1; padding: 8px; font-weight: bold; font-size: 11pt; color: #be123c;">${totalKHR.toLocaleString()} ៛</td>
+            <td align="center" bgcolor="#f8fafc" style="border: 1px solid #cbd5e1; padding: 8px; font-weight: bold; font-size: 13pt; color: #0f172a;">${totalCount}</td>
+            <td colspan="2" align="center" bgcolor="#f0fdf4" style="border: 1px solid #cbd5e1; padding: 8px; font-weight: bold; font-size: 13pt; color: #15803d;">${completedOrders.length}</td>
+            <td align="center" bgcolor="#fffbeb" style="border: 1px solid #cbd5e1; padding: 8px; font-weight: bold; font-size: 13pt; color: #b45309;">${pendingOrders.length}</td>
+            <td align="center" bgcolor="#fef2f2" style="border: 1px solid #cbd5e1; padding: 8px; font-weight: bold; font-size: 13pt; color: #b91c1c;">${cancelledOrders.length}</td>
+            <td align="center" bgcolor="#f0fdf4" style="border: 1px solid #cbd5e1; padding: 8px; font-weight: bold; font-size: 11pt; color: #15803d;">${totalCount > 0 ? Math.round((completedOrders.length / totalCount) * 100) : 0}%</td>
+          </tr>
+        </tbody>
       </table>
 
       <!-- Main Orders Data Table -->
