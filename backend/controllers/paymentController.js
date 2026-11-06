@@ -109,7 +109,13 @@ export const verifyTransactionByMD5 = async (req, res) => {
     }
 
     const DEFAULT_BAKONG_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7ImlkIjoiMmUzOWM5MWM4NDg1NGU0YSJ9LCJpYXQiOjE3ODk4MDc4MDEsImV4cCI6MTc5NzU4MzgwMX0._mCOtVtUg4ajWvQqnlUEu9DrQ_NwKwZuYCEP7SNE8po';
-    const token = process.env.BAKONG_TOKEN || DEFAULT_BAKONG_TOKEN;
+    
+    // Automatically fallback to fresh token if process.env.BAKONG_TOKEN is missing or contains old exhausted account (5ca3b4fd0032467b)
+    let token = process.env.BAKONG_TOKEN;
+    if (!token || token.includes('NWNhM2I0ZmQwMDMyNDY3Yi')) {
+      token = DEFAULT_BAKONG_TOKEN;
+    }
+
     const apiUrl = process.env.BAKONG_API_URL || 'https://api-bakong.nbc.gov.kh/v1';
 
     console.log(`[Bakong Check] Checking MD5: ${md5} with Bakong API...`);
@@ -134,12 +140,13 @@ export const verifyTransactionByMD5 = async (req, res) => {
         data.data?.status === 'SUCCESS' ||
         Boolean(data.hash);
 
+      const msg = typeof data.responseMessage === 'string' ? data.responseMessage.toLowerCase() : '';
       const isRateLimited = Boolean(
         data.errorCode === 17 ||
-        data.errorCode === 1 ||
-        (typeof data.responseMessage === 'string' &&
-          (data.responseMessage.toLowerCase().includes('limit') ||
-           data.responseMessage.toLowerCase().includes('exceeded')))
+        data.errorCode === 19 ||
+        msg.includes('limit of 100 exceeded') ||
+        msg.includes('daily request limit') ||
+        msg.includes('limit exceeded')
       );
 
       return res.json({
