@@ -210,7 +210,7 @@ export const AdminOrders = () => {
             onClick={() => setIsPrintModalOpen(true)}
             icon={<Printer size={16} />}
           >
-            {isKm ? '🖨️ តម្រង & បោះពុម្ព (Print)' : '🖨️ Filter & Print'}
+            {isKm ? '🖨️ បោះពុម្ពរបាយការណ៍' : '🖨️ Print Report'}
           </Button>
         </div>
       </div>
@@ -585,13 +585,12 @@ export const AdminOrders = () => {
           </div>
         </div>
 
-        {/* Print Filter & Live Preview Modal */}
+        {/* Print Live Preview & Select Modal */}
         <PrintReportModal
           isOpen={isPrintModalOpen}
           onClose={() => setIsPrintModalOpen(false)}
-          orders={orders}
+          orders={filteredOrders}
           adminUser={user}
-          initialStatus={statusFilter}
           preSelectedOrderIds={selectedOrderIds}
         />
 
