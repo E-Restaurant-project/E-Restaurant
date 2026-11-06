@@ -70,6 +70,9 @@ export const Checkout = () => {
   const [khqrLoading, setKhqrLoading] = useState(false);
   const [khqrTimeLeft, setKhqrTimeLeft] = useState(120);
   const [khqrPaid, setKhqrPaid] = useState(false);
+  // 'auto' = auto-poll bank & hide button | 'manual' = wait for user click to verify
+  const [khqrMode, setKhqrMode] = useState('auto');
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
 
   // Promo code input state
   const [inputPromoCode, setInputPromoCode] = useState('');
@@ -162,14 +165,68 @@ export const Checkout = () => {
     }
   };
 
-  // Direct payment confirmation via "I Have Paid" button (No polling to conserve Bakong token)
-  const handleConfirmPaid = () => {
-    setKhqrPaid(true);
-    showToast(isKm ? '✅ បានទទួលការបញ្ជាក់ការទូទាត់! កំពុងបញ្ជូនការកុម្ម៉ង់...' : 'Payment confirmed! Placing order...', 'success');
-    setTimeout(() => {
-      executeOrderCreation();
-    }, 600);
+  // Real Bakong verification (Strict check — NO BYPASS!)
+  const verifyBakongPayment = async (silent = false) => {
+    if (!khqrData?.md5 || khqrPaid) return false;
+    try {
+      const res = await apiService.checkBakongTransaction(khqrData.md5);
+      const isPaid =
+        res?.isPaid === true ||
+        res?.success === true ||
+        res?.responseCode === 0 ||
+        Boolean(res?.data?.hash);
+
+      if (isPaid) {
+        setKhqrPaid(true);
+        showToast(isKm ? '🎉 ការទូទាត់ជោគជ័យ! កំពុងបញ្ជូនការកុម្ម៉ង់...' : 'Payment verified successfully! Placing order...', 'success');
+        setTimeout(() => {
+          executeOrderCreation();
+        }, 800);
+        return true;
+      } else if (!silent) {
+        // In manual mode, inform customer that bank hasn't received payment yet — NO BYPASS!
+        showToast(
+          isKm
+            ? '⚠️ មិនទាន់ឃើញការផ្ទេរប្រាក់ពីធនាគារនៅឡើយទេ។ សូមពិនិត្យមើល App ធនាគាររបស់អ្នក រួចព្យាយាមចុចម្តងទៀត!'
+            : 'Payment not found in bank yet. Please complete transfer in your banking app and try again!',
+          'warning'
+        );
+      }
+      return false;
+    } catch (err) {
+      if (!silent) {
+        showToast(isKm ? 'មិនអាចពិនិត្យស្ថានភាពបានទេ សូមព្យាយាមម្តងទៀត' : 'Could not check payment status. Please try again', 'error');
+      }
+      return false;
+    }
   };
+
+  // Manual Click Handler (Genuinely queries Bakong API)
+  const handleVerifyManualPayment = async () => {
+    if (isCheckingPayment || khqrPaid) return;
+    setIsCheckingPayment(true);
+    await verifyBakongPayment(false);
+    setIsCheckingPayment(false);
+  };
+
+  // Auto-verify Polling: ONLY active when khqrMode === 'auto'
+  React.useEffect(() => {
+    if (!showKhqrModal || !khqrData?.md5 || khqrPaid || khqrTimeLeft <= 0) return;
+    if (khqrMode !== 'auto') return; // Do NOT poll in manual mode to save tokens!
+
+    const initialTimer = setTimeout(() => {
+      verifyBakongPayment(true);
+    }, 4000);
+
+    const pollInterval = setInterval(() => {
+      verifyBakongPayment(true);
+    }, 6000);
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(pollInterval);
+    };
+  }, [showKhqrModal, khqrData?.md5, khqrPaid, khqrTimeLeft, khqrMode]);
 
   // Apply promo code on checkout
   const handleApplyCheckoutPromo = async (e) => {
@@ -1061,7 +1118,7 @@ export const Checkout = () => {
                 </div>
 
                 {/* Actions / Status indicator */}
-                <div style={{ marginTop: '1rem' }}>
+                <div style={{ marginTop: '0.75rem' }}>
                   {khqrTimeLeft <= 0 && !khqrPaid ? (
                     <Button
                       variant="primary"
@@ -1074,35 +1131,101 @@ export const Checkout = () => {
                     </Button>
                   ) : !khqrPaid ? (
                     <div>
-                      {/* Clear User Instruction */}
-                      <p style={{
-                        fontSize: '0.84rem',
-                        color: '#64748B',
-                        marginBottom: '1rem',
-                        lineHeight: 1.5
-                      }}>
-                        {isKm
-                          ? 'សូមស្កេនទូទាត់តាម App ធនាគាររបស់អ្នក រួចចុចប៊ូតុងខាងក្រោមដើម្បីបញ្ជូនការកុម្ម៉ង់!'
-                          : 'Please scan & pay with your banking app, then click the button below to submit your order!'}
-                      </p>
-
-                      {/* Single Clear Action Button */}
-                      <Button
-                        variant="primary"
-                        fullWidth
-                        onClick={handleConfirmPaid}
+                      {/* Cycle/Pill-Shaped Segmented Tab Switch (Like Auth signin/signup) */}
+                      <div
+                        className="auth-segmented-nav"
                         style={{
-                          borderRadius: '12px',
-                          backgroundColor: '#16A34A',
-                          borderColor: '#16A34A',
-                          fontWeight: 700,
-                          padding: '13px',
-                          fontSize: '0.98rem',
-                          boxShadow: '0 3px 10px rgba(22, 163, 74, 0.3)'
+                          margin: '0 0 1rem 0',
+                          padding: '3px',
+                          borderRadius: '24px',
+                          backgroundColor: '#f1f5f9',
+                          border: '1px solid #e2e8f0'
                         }}
                       >
-                        ✅ ខ្ញុំបានបាញ់ប្រាក់រួចហើយ (I Have Paid)
-                      </Button>
+                        <button
+                          type="button"
+                          className={`auth-segmented-btn ${khqrMode === 'auto' ? 'auth-segmented-btn--active' : ''}`}
+                          onClick={() => setKhqrMode('auto')}
+                          style={{
+                            borderRadius: '20px',
+                            padding: '8px 14px',
+                            fontSize: '0.82rem',
+                            fontWeight: 700
+                          }}
+                        >
+                          <span>🔁</span>
+                          <span>{isKm ? 'ពិនិត្យស្វ័យប្រវត្តិ (Auto)' : 'Auto Verify'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`auth-segmented-btn ${khqrMode === 'manual' ? 'auth-segmented-btn--active' : ''}`}
+                          onClick={() => setKhqrMode('manual')}
+                          style={{
+                            borderRadius: '20px',
+                            padding: '8px 14px',
+                            fontSize: '0.82rem',
+                            fontWeight: 700
+                          }}
+                        >
+                          <span>👆</span>
+                          <span>{isKm ? 'ចុចដោយដៃ (Manual)' : 'Manual Click'}</span>
+                        </button>
+                      </div>
+
+                      {/* Mode 1: Auto Verify (NO button shown! Clean animated status) */}
+                      {khqrMode === 'auto' ? (
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '10px',
+                          backgroundColor: '#F0FDF4',
+                          border: '1.5px solid #86EFAC',
+                          borderRadius: '14px',
+                          padding: '12px 16px',
+                          color: '#15803D',
+                          fontSize: '0.84rem',
+                          fontWeight: 600,
+                          boxShadow: '0 2px 8px rgba(34, 197, 94, 0.1)'
+                        }}>
+                          <RefreshCw size={16} style={{ animation: 'spin 2s linear infinite', color: '#16A34A' }} />
+                          <span>{isKm ? 'កំពុងរង់ចាំការទូទាត់ពី App ធនាគារដោយស្វ័យប្រវត្តិ...' : 'Auto-checking bank payment...'}</span>
+                        </div>
+                      ) : (
+                        /* Mode 2: Manual Click (Shows button, clicks to verify strictly with bank — NO BYPASS!) */
+                        <div>
+                          <p style={{
+                            fontSize: '0.82rem',
+                            color: '#64748B',
+                            marginBottom: '0.75rem',
+                            lineHeight: 1.5
+                          }}>
+                            {isKm
+                              ? 'សូមស្កេនបាញ់លុយតាម App ធនាគាររបស់អ្នក រួចចុចប៊ូតុងខាងក្រោមដើម្បីផ្ទៀងផ្ទាត់'
+                              : 'Please scan & pay with your banking app, then click below to verify'}
+                          </p>
+                          <Button
+                            variant="primary"
+                            fullWidth
+                            disabled={isCheckingPayment}
+                            onClick={handleVerifyManualPayment}
+                            icon={<RefreshCw size={16} style={{ animation: isCheckingPayment ? 'spin 1s linear infinite' : 'none' }} />}
+                            style={{
+                              borderRadius: '12px',
+                              backgroundColor: '#16A34A',
+                              borderColor: '#16A34A',
+                              fontWeight: 700,
+                              padding: '13px',
+                              fontSize: '0.96rem',
+                              boxShadow: '0 3px 10px rgba(22, 163, 74, 0.25)'
+                            }}
+                          >
+                            {isCheckingPayment
+                              ? (isKm ? 'កំពុងផ្ទៀងផ្ទាត់ជាមួយធនាគារ...' : 'Verifying with bank...')
+                              : (isKm ? '✅ ខ្ញុំបានបាញ់ប្រាក់រួចហើយ (ផ្ទៀងផ្ទាត់)' : '✅ I Have Paid (Verify Payment)')}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ) : null}
                 </div>
