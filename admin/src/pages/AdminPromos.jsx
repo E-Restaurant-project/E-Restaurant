@@ -71,6 +71,36 @@ export const AdminPromos = () => {
   const [isActive, setIsActive] = useState(true);
   const [error, setError] = useState('');
 
+  // Custom Banner Modal State
+  const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
+  const [customBannerKm, setCustomBannerKm] = useState('');
+  const [customBannerEn, setCustomBannerEn] = useState('');
+
+  const handleOpenEditBanner = () => {
+    setCustomBannerKm(storeSettings?.announcement?.text_km || '');
+    setCustomBannerEn(storeSettings?.announcement?.text_en || '');
+    setIsBannerModalOpen(true);
+  };
+
+  const handleSaveCustomBanner = async (e) => {
+    e.preventDefault();
+    try {
+      await updateStoreSettings({
+        ...storeSettings,
+        announcement: {
+          ...storeSettings?.announcement,
+          active: true,
+          text_km: customBannerKm.trim(),
+          text_en: customBannerEn.trim()
+        }
+      });
+      showToast(isKm ? 'បានរក្សាទុកសារ Banner ជោគជ័យ' : 'Banner text saved', 'success');
+      setIsBannerModalOpen(false);
+    } catch (_) {
+      showToast(isKm ? 'បរាជ័យ' : 'Failed', 'error');
+    }
+  };
+
   // 1. Category Discount Instant Handler
   const handleSaveCategoryDiscount = async (catId, discountPct) => {
     try {
@@ -195,7 +225,7 @@ export const AdminPromos = () => {
   // 1-Click Feature on Top Announcement Banner
   const handleFeatureOnBanner = async (promo) => {
     try {
-      const bannerKm = `ប្រើប្រាស់កូដ VIP ឬ ${promo.code} ដើម្បីទទួលបានការបញ្ចុះតម្លៃ ${promo.discount}% គ្រប់មុខទំនិញទាំងអស់`;
+      const bannerKm = `ប្រើប្រាស់កូដ ${promo.code} ដើម្បីទទួលបានការបញ្ចុះតម្លៃ ${promo.discount}% គ្រប់មុខទំនិញទាំងអស់`;
       const bannerEn = `Use coupon ${promo.code} to get a ${promo.discount}% discount on all items.`;
       await updateStoreSettings({
         ...storeSettings,
@@ -836,6 +866,24 @@ export const AdminPromos = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <button
                   type="button"
+                  onClick={handleOpenEditBanner}
+                  className="btn btn--outline btn--sm"
+                  style={{
+                    fontSize: '0.78rem',
+                    padding: '5px 10px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    backgroundColor: '#ffffff'
+                  }}
+                  title={isKm ? 'កែសម្រួលអត្ថបទ Banner ដោយផ្ទាល់' : 'Edit Banner Text'}
+                >
+                  <Edit2 size={12} />
+                  <span>{isKm ? 'កែអត្ថបទ' : 'Edit Text'}</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={handleToggleBannerActive}
                   style={{
                     padding: '5px 12px',
@@ -1170,6 +1218,48 @@ export const AdminPromos = () => {
             </Button>
             <Button variant="primary" type="submit">
               {isKm ? 'រក្សាទុកការកែប្រែ' : 'Update Code'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Banner Text Modal */}
+      <Modal
+        isOpen={isBannerModalOpen}
+        onClose={() => setIsBannerModalOpen(false)}
+        title={isKm ? 'កែសម្រួលអត្ថបទរបារប្រកាសលើគេហទំព័រ (Banner Text)' : 'Edit Live Announcement Banner Text'}
+        maxWidth="520px"
+      >
+        <form onSubmit={handleSaveCustomBanner}>
+          <div className="form-group">
+            <label className="form-label form-label--required">{isKm ? 'អត្ថបទប្រកាសជាភាសាខ្មែរ' : 'Announcement (Khmer)'}</label>
+            <textarea
+              className="form-input"
+              rows={3}
+              value={customBannerKm}
+              onChange={(e) => setCustomBannerKm(e.target.value)}
+              placeholder="សារប្រកាសជាភាសាខ្មែរ..."
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">{isKm ? 'អត្ថបទប្រកាសជាភាសាអង់គ្លេស' : 'Announcement (English)'}</label>
+            <textarea
+              className="form-input"
+              rows={3}
+              value={customBannerEn}
+              onChange={(e) => setCustomBannerEn(e.target.value)}
+              placeholder="Announcement in English..."
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)' }}>
+            <Button variant="ghost" onClick={() => setIsBannerModalOpen(false)}>
+              {t('admin.cancel')}
+            </Button>
+            <Button variant="primary" type="submit">
+              {t('common.save')}
             </Button>
           </div>
         </form>
