@@ -524,10 +524,10 @@ export const Account = () => {
                   ? 'ក្រុមការងារភូមិយើងរីករាយនឹងជួយលោកអ្នករៀងរាល់ម៉ោង 8:00 AM - 10:00 PM។'
                   : 'Our customer support team is available daily 8:00 AM - 10:00 PM.'}
               </p>
-              <a href="tel:012345678" className="account-support-btn">
-                <Phone size={14} />
-                <span>012 345 678</span>
-              </a>
+              <div className="account-support-btn" style={{ cursor: 'default', userSelect: 'text' }}>
+                <Phone size={14} color="var(--color-primary, #881337)" />
+                <span style={{ fontWeight: 700 }}>012 345 678</span>
+              </div>
             </div>
           </aside>
 
