@@ -108,7 +108,7 @@ export const verifyTransactionByMD5 = async (req, res) => {
       });
     }
 
-    const DEFAULT_BAKONG_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7ImlkIjoiNWNhM2I0ZmQwMDMyNDY3YiJ9LCJpYXQiOjE3OTAwNjQ1NTQsImV4cCI6MTc5Nzg0MDU1NH0.yoIdI6hSVc-bY-tqcjvlTEl9BZRLKc-YBTayr15XPn8';
+    const DEFAULT_BAKONG_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7ImlkIjoiMmUzOWM5MWM4NDg1NGU0YSJ9LCJpYXQiOjE3ODk4MDc4MDEsImV4cCI6MTc5NzU4MzgwMX0._mCOtVtUg4ajWvQqnlUEu9DrQ_NwKwZuYCEP7SNE8po';
     const token = process.env.BAKONG_TOKEN || DEFAULT_BAKONG_TOKEN;
     const apiUrl = process.env.BAKONG_API_URL || 'https://api-bakong.nbc.gov.kh/v1';
 
