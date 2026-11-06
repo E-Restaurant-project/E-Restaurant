@@ -243,10 +243,10 @@ export const printOrdersReport = ({
           color: #0f172a;
         }
 
-        .summary-cards {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 8px;
+        .summary-table {
+          width: 100%;
+          border-collapse: separate;
+          border-spacing: 8px 0;
           margin-bottom: 14px;
         }
 
@@ -255,6 +255,7 @@ export const printOrdersReport = ({
           border-radius: 6px;
           background: #f8fafc;
           border: 1px solid #e2e8f0;
+          vertical-align: top;
         }
 
         .card-label {
@@ -350,32 +351,38 @@ export const printOrdersReport = ({
         </div>
       </div>
 
-      <!-- KPI Summary Cards (Compact 4-col in Portrait) -->
-      <div class="summary-cards">
-        <div class="card card--primary">
-          <div class="card-label">${isKm ? 'ចំណូលសរុប (Revenue)' : 'Total Revenue'}</div>
-          <div class="card-value">$${totalUSD.toFixed(2)}</div>
-          <div style="font-size: 9px; color: #be123c; margin-top: 1px;">≈ ${totalKHR.toLocaleString()} ៛</div>
-        </div>
+      <!-- KPI Summary Table (Excel & Print Table Layout) -->
+      <table class="summary-table" style="width: 100%; border-collapse: separate; border-spacing: 8px 0; margin-bottom: 14px;">
+        <tr>
+          <!-- 1. Total Revenue Card -->
+          <td class="card card--primary" bgcolor="#fff1f2" style="width: 25%; padding: 8px 10px; border-radius: 6px; background-color: #fff1f2; border: 1px solid #fecdd3; vertical-align: top;">
+            <div class="card-label" style="font-size: 9.5px; color: #64748b; font-weight: 600; margin-bottom: 2px;">${isKm ? 'ចំណូលសរុប (Revenue)' : 'Total Revenue'}</div>
+            <div class="card-value" style="font-size: 15px; font-weight: 800; color: #881337;">$${totalUSD.toFixed(2)}</div>
+            <div style="font-size: 9px; color: #be123c; margin-top: 1px;">≈ ${totalKHR.toLocaleString()} ៛</div>
+          </td>
 
-        <div class="card">
-          <div class="card-label">${isKm ? 'ចំនួនកុម្ម៉ង់សរុប' : 'Total Orders'}</div>
-          <div class="card-value">${totalCount}</div>
-          <div style="font-size: 9px; color: #64748b; margin-top: 1px;">${isKm ? 'តាមតម្រងបច្ចុប្បន្ន' : 'Filtered'}</div>
-        </div>
+          <!-- 2. Total Orders Card -->
+          <td class="card" bgcolor="#f8fafc" style="width: 25%; padding: 8px 10px; border-radius: 6px; background-color: #f8fafc; border: 1px solid #e2e8f0; vertical-align: top;">
+            <div class="card-label" style="font-size: 9.5px; color: #64748b; font-weight: 600; margin-bottom: 2px;">${isKm ? 'ចំនួនកុម្ម៉ង់សរុប' : 'Total Orders'}</div>
+            <div class="card-value" style="font-size: 15px; font-weight: 800; color: #0f172a;">${totalCount}</div>
+            <div style="font-size: 9px; color: #64748b; margin-top: 1px;">${isKm ? 'តាមតម្រងបច្ចុប្បន្ន' : 'Filtered'}</div>
+          </td>
 
-        <div class="card">
-          <div class="card-label">${isKm ? 'ការកុម្ម៉ង់បានបញ្ចប់' : 'Completed'}</div>
-          <div class="card-value" style="color: #15803d;">${completedOrders.length}</div>
-          <div style="font-size: 9px; color: #15803d; margin-top: 1px;">${totalCount > 0 ? Math.round((completedOrders.length / totalCount) * 100) : 0}% ${isKm ? 'ជោគជ័យ' : 'Success'}</div>
-        </div>
+          <!-- 3. Completed Orders Card -->
+          <td class="card" bgcolor="#f0fdf4" style="width: 25%; padding: 8px 10px; border-radius: 6px; background-color: #f0fdf4; border: 1px solid #bbf7d0; vertical-align: top;">
+            <div class="card-label" style="font-size: 9.5px; color: #64748b; font-weight: 600; margin-bottom: 2px;">${isKm ? 'ការកុម្ម៉ង់បានបញ្ចប់' : 'Completed'}</div>
+            <div class="card-value" style="font-size: 15px; font-weight: 800; color: #15803d;">${completedOrders.length}</div>
+            <div style="font-size: 9px; color: #15803d; margin-top: 1px;">${totalCount > 0 ? Math.round((completedOrders.length / totalCount) * 100) : 0}% ${isKm ? 'ជោគជ័យ' : 'Success'}</div>
+          </td>
 
-        <div class="card">
-          <div class="card-label">${isKm ? 'កំពុងដំណើរការ/រង់ចាំ' : 'Pending / Cooking'}</div>
-          <div class="card-value" style="color: #b45309;">${pendingOrders.length}</div>
-          <div style="font-size: 9px; color: #b45309; margin-top: 1px;">${isKm ? 'ត្រូវការតាមដាន' : 'Active'}</div>
-        </div>
-      </div>
+          <!-- 4. Pending / Cooking Card -->
+          <td class="card" bgcolor="#fffbeb" style="width: 25%; padding: 8px 10px; border-radius: 6px; background-color: #fffbeb; border: 1px solid #fef3c7; vertical-align: top;">
+            <div class="card-label" style="font-size: 9.5px; color: #64748b; font-weight: 600; margin-bottom: 2px;">${isKm ? 'កំពុងដំណើរការ/រង់ចាំ' : 'Pending / Cooking'}</div>
+            <div class="card-value" style="font-size: 15px; font-weight: 800; color: #b45309;">${pendingOrders.length}</div>
+            <div style="font-size: 9px; color: #b45309; margin-top: 1px;">${isKm ? 'ត្រូវការតាមដាន' : 'Active'}</div>
+          </td>
+        </tr>
+      </table>
 
       <!-- Orders Data Table with Elegant Burgundy Header -->
       <table class="report-table">
@@ -456,6 +463,254 @@ export const printOrdersReport = ({
       }
     }
   }, 400);
+};
+
+/**
+ * exportOrdersReportToExcel
+ * Exports the orders report to a Microsoft Excel-compatible spreadsheet (.xls)
+ * Fully preserves Khmer Unicode fonts, background colors (#881337 header, pink/green summary cards),
+ * table borders, number formatting, and customer details.
+ */
+export const exportOrdersReportToExcel = ({
+  orders = [],
+  filterMeta = {},
+  adminUser = null,
+  isKm = true
+}) => {
+  const now = new Date();
+  const printDateStr = now.toLocaleDateString(isKm ? 'km-KH' : 'en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+  const printTimeStr = now.toLocaleTimeString(isKm ? 'km-KH' : 'en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const adminName = adminUser?.name || adminUser?.username || (isKm ? 'អ្នកគ្រប់គ្រង' : 'Administrator');
+
+  // Summary Metrics
+  const totalCount = orders.length;
+  const completedOrders = orders.filter((o) => o.status === 'completed' || o.order_status === 'completed');
+  const pendingOrders = orders.filter((o) => ['pending', 'confirmed', 'preparing', 'delivering'].includes(o.status || o.order_status));
+  const cancelledOrders = orders.filter((o) => o.status === 'cancelled' || o.order_status === 'cancelled');
+
+  const totalUSD = orders.reduce((sum, o) => sum + (Number(o.total_usd || o.total) || 0), 0);
+  const totalKHR = orders.reduce((sum, o) => {
+    if (o.total_khr) return sum + Number(o.total_khr);
+    return sum + (Number(o.total_usd || o.total || 0) * 4100);
+  }, 0);
+
+  const getStatusText = (status) => {
+    const s = String(status || 'pending').toLowerCase();
+    switch (s) {
+      case 'completed': return isKm ? 'បានប្រគល់' : 'Completed';
+      case 'preparing': return isKm ? 'កំពុងចម្អិន' : 'Cooking';
+      case 'delivering': return isKm ? 'កំពុងដឹក' : 'Delivering';
+      case 'cancelled': return isKm ? 'បានបោះបង់' : 'Cancelled';
+      default: return isKm ? 'កំពុងរង់ចាំ' : 'Pending';
+    }
+  };
+
+  const getStatusBg = (status) => {
+    const s = String(status || 'pending').toLowerCase();
+    switch (s) {
+      case 'completed': return '#dcfce7';
+      case 'preparing': return '#fef3c7';
+      case 'delivering': return '#e0f2fe';
+      case 'cancelled': return '#fee2e2';
+      default: return '#fef9c3';
+    }
+  };
+
+  const getStatusColor = (status) => {
+    const s = String(status || 'pending').toLowerCase();
+    switch (s) {
+      case 'completed': return '#15803d';
+      case 'preparing': return '#b45309';
+      case 'delivering': return '#0369a1';
+      case 'cancelled': return '#b91c1c';
+      default: return '#a16207';
+    }
+  };
+
+  const rowsExcelHtml = orders.map((order, idx) => {
+    const orderId = order.id || order.order_id || String(order._id || '').slice(-6).toUpperCase();
+    const dateObj = new Date(order.created_at || order.createdAt || Date.now());
+    const dateFormatted = dateObj.toLocaleDateString(isKm ? 'km-KH' : 'en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    const timeFormatted = dateObj.toLocaleTimeString(isKm ? 'km-KH' : 'en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const custName = order.customer?.name || order.customerName || order.customer_name || (isKm ? 'អតិថិជនទូទៅ' : 'Guest');
+    const custPhone = order.customer?.phone || order.phone || order.customer_phone || '-';
+
+    const itemsSummary = (order.items || []).map((it) => {
+      const name = isKm ? (it.name_km || it.name || it.title) : (it.name_en || it.name || it.title);
+      return `${name} (x${it.quantity || 1})`;
+    }).join(', ');
+
+    const statusText = getStatusText(order.status || order.order_status);
+    const statusBg = getStatusBg(order.status || order.order_status);
+    const statusColor = getStatusColor(order.status || order.order_status);
+    const amountUsd = Number(order.total_usd || order.total || 0);
+    const amountKhr = Number(order.total_khr || (amountUsd * 4100));
+    const payMethod = order.payment_method ? order.payment_method.toUpperCase() : (order.paymentMethod ? order.paymentMethod.toUpperCase() : 'KHQR');
+
+    const rowBg = idx % 2 === 0 ? '#ffffff' : '#fafafa';
+
+    return `
+      <tr bgcolor="${rowBg}">
+        <td align="center" style="border: 1px solid #cbd5e1; padding: 6px; font-weight: bold; color: #475569;">${idx + 1}</td>
+        <td align="center" style="border: 1px solid #cbd5e1; padding: 6px; font-family: monospace; font-weight: bold; color: #881337;">#${orderId}</td>
+        <td align="center" style="border: 1px solid #cbd5e1; padding: 6px;">${dateFormatted} ${timeFormatted}</td>
+        <td style="border: 1px solid #cbd5e1; padding: 6px; font-weight: bold; color: #0f172a;">${custName}</td>
+        <td align="center" style="border: 1px solid #cbd5e1; padding: 6px; font-family: monospace;">${custPhone}</td>
+        <td style="border: 1px solid #cbd5e1; padding: 6px;">${itemsSummary || '-'}</td>
+        <td align="center" bgcolor="${statusBg}" style="border: 1px solid #cbd5e1; padding: 6px; font-weight: bold; color: ${statusColor};">
+          ${statusText}
+        </td>
+        <td align="center" style="border: 1px solid #cbd5e1; padding: 6px; font-weight: bold;">${payMethod}</td>
+        <td align="right" style="border: 1px solid #cbd5e1; padding: 6px; font-weight: bold; color: #0f172a;">$${amountUsd.toFixed(2)}</td>
+        <td align="right" style="border: 1px solid #cbd5e1; padding: 6px; color: #475569;">${amountKhr.toLocaleString()} ៛</td>
+      </tr>
+    `;
+  }).join('');
+
+  const excelHtml = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office"
+          xmlns:x="urn:schemas-microsoft-com:office:excel"
+          xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <!--[if gte mso 9]>
+      <xml>
+        <x:ExcelWorkbook>
+          <x:ExcelWorksheets>
+            <x:ExcelWorksheet>
+              <x:Name>${isKm ? 'របាយការណ៍ការកុម្ម៉ង់' : 'Orders Report'}</x:Name>
+              <x:WorksheetOptions>
+                <x:DisplayGridlines/>
+              </x:WorksheetOptions>
+            </x:ExcelWorksheet>
+          </x:ExcelWorksheets>
+        </x:ExcelWorkbook>
+      </xml>
+      <![endif]-->
+      <style>
+        body, td, th {
+          font-family: 'Kantumruy Pro', Arial, sans-serif;
+          font-size: 11pt;
+        }
+      </style>
+    </head>
+    <body>
+      <!-- Letterhead Banner -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
+        <tr>
+          <td colspan="10" style="padding: 12px; font-size: 16pt; font-weight: 800; color: #881337; text-align: center;">
+            ${isKm ? 'ភោជនីយដ្ឋាន ភូមិយើង (Phum Yeung Restaurant)' : 'PHUM YEUNG RESTAURANT'}
+          </td>
+        </tr>
+        <tr>
+          <td colspan="10" style="padding: 4px; font-size: 13pt; font-weight: 700; color: #334155; text-align: center;">
+            ${isKm ? 'របាយការណ៍លម្អិតនៃការកុម្ម៉ង់ (Orders Report)' : 'DETAILED ORDERS REPORT'}
+          </td>
+        </tr>
+        <tr>
+          <td colspan="10" style="padding: 4px; font-size: 10pt; color: #64748b; text-align: center;">
+            ${isKm ? 'កាលបរិច្ឆេទ' : 'Date'}: ${printDateStr} (${printTimeStr}) | ${isKm ? 'រៀបចំដោយ' : 'Generated by'}: ${adminName}
+          </td>
+        </tr>
+        <tr><td colspan="10" style="height: 12px;"></td></tr>
+      </table>
+
+      <!-- KPI Summary Table (Excel-compatible HTML table with colors) -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
+        <tr>
+          <!-- Total Revenue Card -->
+          <td colspan="2" bgcolor="#fff1f2" style="border: 2px solid #fecdd3; padding: 10px; vertical-align: top;">
+            <div style="font-size: 9.5pt; color: #64748b; font-weight: bold;">${isKm ? 'ចំណូលសរុប (Total Revenue)' : 'Total Revenue'}</div>
+            <div style="font-size: 16pt; font-weight: 800; color: #881337;">$${totalUSD.toFixed(2)}</div>
+            <div style="font-size: 9pt; color: #be123c;">≈ ${totalKHR.toLocaleString()} ៛</div>
+          </td>
+          <td style="width: 15px;"></td>
+          <!-- Total Orders Card -->
+          <td colspan="2" bgcolor="#f8fafc" style="border: 2px solid #cbd5e1; padding: 10px; vertical-align: top;">
+            <div style="font-size: 9.5pt; color: #64748b; font-weight: bold;">${isKm ? 'ចំនួនកុម្ម៉ង់សរុប (Total Orders)' : 'Total Orders'}</div>
+            <div style="font-size: 16pt; font-weight: 800; color: #0f172a;">${totalCount}</div>
+            <div style="font-size: 9pt; color: #64748b;">${isKm ? 'តាមការជ្រើសរើស' : 'Selected'}</div>
+          </td>
+          <td style="width: 15px;"></td>
+          <!-- Completed Card -->
+          <td colspan="2" bgcolor="#f0fdf4" style="border: 2px solid #bbf7d0; padding: 10px; vertical-align: top;">
+            <div style="font-size: 9.5pt; color: #64748b; font-weight: bold;">${isKm ? 'ការកុម្ម៉ង់បានបញ្ចប់ (Completed)' : 'Completed'}</div>
+            <div style="font-size: 16pt; font-weight: 800; color: #15803d;">${completedOrders.length}</div>
+            <div style="font-size: 9pt; color: #15803d;">${totalCount > 0 ? Math.round((completedOrders.length / totalCount) * 100) : 0}% ${isKm ? 'ជោគជ័យ' : 'Success'}</div>
+          </td>
+          <td style="width: 15px;"></td>
+          <!-- Pending / Cooking Card -->
+          <td colspan="2" bgcolor="#fffbeb" style="border: 2px solid #fef3c7; padding: 10px; vertical-align: top;">
+            <div style="font-size: 9.5pt; color: #64748b; font-weight: bold;">${isKm ? 'កំពុងដំណើរការ (Pending / Cooking)' : 'Pending / Cooking'}</div>
+            <div style="font-size: 16pt; font-weight: 800; color: #b45309;">${pendingOrders.length}</div>
+            <div style="font-size: 9pt; color: #b45309;">${isKm ? 'ត្រូវការតាមដាន' : 'Active'}</div>
+          </td>
+        </tr>
+        <tr><td colspan="10" style="height: 14px;"></td></tr>
+      </table>
+
+      <!-- Main Orders Data Table -->
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr bgcolor="#881337">
+            <th style="border: 1px solid #6b0f2a; padding: 8px 6px; color: #ffffff; font-weight: bold; text-align: center;">#</th>
+            <th style="border: 1px solid #6b0f2a; padding: 8px 6px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'លេខកូដ' : 'Order ID'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 8px 6px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'កាលបរិច្ឆេទ' : 'Date / Time'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 8px 6px; color: #ffffff; font-weight: bold; text-align: left;">${isKm ? 'អតិថិជន' : 'Customer'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 8px 6px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'ទូរស័ព្ទ' : 'Phone'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 8px 6px; color: #ffffff; font-weight: bold; text-align: left;">${isKm ? 'មុខម្ហូប & បរិមាណ' : 'Items & Qty'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 8px 6px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'ស្ថានភាព' : 'Status'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 8px 6px; color: #ffffff; font-weight: bold; text-align: center;">${isKm ? 'ទូទាត់' : 'Payment'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 8px 6px; color: #ffffff; font-weight: bold; text-align: right;">${isKm ? 'តម្លៃ ($)' : 'Total ($)'}</th>
+            <th style="border: 1px solid #6b0f2a; padding: 8px 6px; color: #ffffff; font-weight: bold; text-align: right;">${isKm ? 'តម្លៃ (៛)' : 'Total (KHR)'}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsExcelHtml}
+          <!-- Grand Total Row -->
+          <tr bgcolor="#f8fafc">
+            <td colspan="8" align="right" style="border: 2px solid #881337; padding: 8px; font-weight: bold; font-size: 12pt; color: #881337;">
+              ${isKm ? 'សរុបរួម (GRAND TOTAL):' : 'GRAND TOTAL:'}
+            </td>
+            <td align="right" style="border: 2px solid #881337; padding: 8px; font-weight: 800; font-size: 12pt; color: #881337;">
+              $${totalUSD.toFixed(2)}
+            </td>
+            <td align="right" style="border: 2px solid #881337; padding: 8px; font-weight: 800; font-size: 11pt; color: #881337;">
+              ${totalKHR.toLocaleString()} ៛
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob(['\uFEFF' + excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const downloadLink = document.createElement('a');
+  const dateTag = now.toISOString().slice(0, 10);
+  downloadLink.href = url;
+  downloadLink.download = `Phum_Yeung_Orders_Report_${dateTag}.xls`;
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
+  URL.revokeObjectURL(url);
 };
 
 /**

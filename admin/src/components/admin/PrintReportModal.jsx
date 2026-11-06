@@ -2,12 +2,13 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
   Printer,
   CheckSquare,
-  Square
+  Square,
+  FileSpreadsheet
 } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { useLanguage } from '../../hooks/useLanguage';
-import { printOrdersReport } from '../../utils/printReport';
+import { printOrdersReport, exportOrdersReportToExcel } from '../../utils/printReport';
 
 export const PrintReportModal = ({
   isOpen,
@@ -81,6 +82,17 @@ export const PrintReportModal = ({
       isKm
     });
     onClose();
+  };
+
+  const handleExportExcel = () => {
+    exportOrdersReportToExcel({
+      orders: ordersToPrint,
+      filterMeta: {
+        specificCount: ordersToPrint.length
+      },
+      adminUser,
+      isKm
+    });
   };
 
   return (
@@ -229,18 +241,34 @@ export const PrintReportModal = ({
         </div>
 
         {/* Action Footer */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #e2e8f0', flexWrap: 'wrap', gap: '8px' }}>
           <Button variant="ghost" onClick={onClose}>
             {isKm ? 'បោះបង់' : 'Cancel'}
           </Button>
-          <Button
-            variant="primary"
-            onClick={handlePrint}
-            disabled={ordersToPrint.length === 0}
-            icon={<Printer size={16} />}
-          >
-            {isKm ? `🖨️ បោះពុម្ព ${ordersToPrint.length} ការកុម្ម៉ង់` : `🖨️ Print Selected (${ordersToPrint.length})`}
-          </Button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <Button
+              variant="outline"
+              onClick={handleExportExcel}
+              disabled={ordersToPrint.length === 0}
+              icon={<FileSpreadsheet size={16} color="#15803d" />}
+              style={{
+                borderColor: '#86efac',
+                color: '#15803d',
+                backgroundColor: '#f0fdf4',
+                fontWeight: 700
+              }}
+            >
+              {isKm ? `📊 នាំចេញជា Excel (${ordersToPrint.length})` : `📊 Export Excel (${ordersToPrint.length})`}
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handlePrint}
+              disabled={ordersToPrint.length === 0}
+              icon={<Printer size={16} />}
+            >
+              {isKm ? `🖨️ បោះពុម្ព ${ordersToPrint.length} ការកុម្ម៉ង់` : `🖨️ Print Selected (${ordersToPrint.length})`}
+            </Button>
+          </div>
         </div>
       </div>
     </Modal>
