@@ -125,18 +125,23 @@ export const verifyTransactionByMD5 = async (req, res) => {
         body: JSON.stringify({ md5 })
       });
 
-      const data = await response.json();
-      console.log(`[Bakong Check Result] responseCode: ${data.responseCode}, message: ${data.responseMessage}, hasHash: ${Boolean(data.data?.hash)}`);
+      const data = await response.json().catch(() => ({}));
+      console.log(`[Bakong Check Result] status: ${response.status}`, JSON.stringify(data));
 
-      const isPaid = data.responseCode === 0 && Boolean(data.data?.hash);
-      const isRateLimited = data.responseCode === 1 &&
+      const isPaid =
+        (data.responseCode === 0 && Boolean(data.data?.hash)) ||
+        (data.status?.code === 0 && Boolean(data.data?.hash)) ||
+        data.data?.status === 'SUCCESS' ||
+        Boolean(data.hash);
+
+      const isRateLimited = (data.responseCode === 1 || data.errorCode === 1) &&
         typeof data.responseMessage === 'string' &&
         data.responseMessage.toLowerCase().includes('limit');
 
       return res.json({
         success: isPaid,
-        responseCode: data.responseCode,
-        responseMessage: data.responseMessage,
+        responseCode: data.responseCode ?? data.status?.code,
+        responseMessage: data.responseMessage ?? data.status?.message,
         isPaid,
         isRateLimited,
         data: data.data

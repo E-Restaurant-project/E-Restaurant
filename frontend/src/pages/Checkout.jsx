@@ -189,7 +189,7 @@ export const Checkout = () => {
         }, 1000);
         return true;
       } else if (manual) {
-        showToast('មិនទាន់ឃើញការទូទាត់នៅឡើយទេ។ សូមពិនិត្យមើល App ធនាគាររបស់អ្នក។', 'warning');
+        showToast('មិនទាន់ឃើញការទូទាត់ពីធនាគារនៅឡើយទេ។ ប្រសិនបើលោកអ្នកបានកាត់លុយរួចហើយ សូមចុចប៊ូតុង "ខ្ញុំបានបាញ់ប្រាក់រួចហើយ" ខាងក្រោម!', 'warning');
       }
     } catch (err) {
       if (manual) {
@@ -1044,61 +1044,65 @@ export const Checkout = () => {
                         </button>
                       </div>
 
-                      {/* Status line */}
-                      {khqrCheckMode === 'auto' && !apiLimitHit ? (
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          fontSize: '0.78rem',
-                          color: '#64748B',
-                          backgroundColor: '#F0FDF4',
-                          padding: '8px 12px',
-                          borderRadius: '10px',
-                          border: '1px solid #BBF7D0'
-                        }}>
-                          <span style={{
-                            display: 'inline-block',
-                            width: '6px',
-                            height: '6px',
-                            borderRadius: '50%',
-                            backgroundColor: '#10B981',
-                            animation: 'pulse 1.5s infinite'
-                          }} />
-                          <span style={{ color: '#065F46', fontWeight: 600 }}>ត្រួតពិនិត្យដោយស្វ័យប្រវត្តិរៀងរាល់ ១០ វិនាទី</span>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {!apiLimitHit && (
-                            <Button
-                              variant="outline"
-                              fullWidth
-                              disabled={checkingPayment}
-                              onClick={() => checkPaymentStatus(true)}
-                              icon={<RefreshCw size={15} style={{ animation: checkingPayment ? 'spin 1s linear infinite' : 'none' }} />}
-                              style={{ borderRadius: '12px', borderColor: '#3B82F6', color: '#3B82F6', fontWeight: 700 }}
-                            >
-                              {checkingPayment ? 'កំពុងពិនិត្យ...' : '👆 ពិនិត្យការទូទាត់ (Check Once)'}
-                            </Button>
-                          )}
+                      {/* Status & Actions */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {khqrCheckMode === 'auto' && !apiLimitHit ? (
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            fontSize: '0.78rem',
+                            color: '#64748B',
+                            backgroundColor: '#F0FDF4',
+                            padding: '8px 12px',
+                            borderRadius: '10px',
+                            border: '1px solid #BBF7D0'
+                          }}>
+                            <span style={{
+                              display: 'inline-block',
+                              width: '6px',
+                              height: '6px',
+                              borderRadius: '50%',
+                              backgroundColor: '#10B981',
+                              animation: 'pulse 1.5s infinite'
+                            }} />
+                            <span style={{ color: '#065F46', fontWeight: 600 }}>ត្រួតពិនិត្យស្វ័យប្រវត្តិតាម Bakong API...</span>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            fullWidth
+                            disabled={checkingPayment}
+                            onClick={() => checkPaymentStatus(true)}
+                            icon={<RefreshCw size={15} style={{ animation: checkingPayment ? 'spin 1s linear infinite' : 'none' }} />}
+                            style={{ borderRadius: '12px', borderColor: '#3B82F6', color: '#3B82F6', fontWeight: 700 }}
+                          >
+                            {checkingPayment ? 'កំពុងពិនិត្យ...' : '🔄 ពិនិត្យការទូទាត់ (Check Payment)'}
+                          </Button>
+                        )}
 
-                          {/* "I Already Paid" override — shown when rate limit hit */}
-                          {apiLimitHit && (
-                            <Button
-                              variant="primary"
-                              fullWidth
-                              onClick={() => {
-                                showToast('✅ ការបញ្ជូនការបញ្ជាទិញ... សូមរង់ចាំ!', 'success');
-                                setTimeout(() => executeOrderCreation(), 800);
-                              }}
-                              style={{ borderRadius: '12px', backgroundColor: '#16A34A', borderColor: '#16A34A', fontWeight: 700 }}
-                            >
-                              ✅ បានទូទាត់រួចហើយ — បញ្ជូនការបញ្ជាទិញ
-                            </Button>
-                          )}
-                        </div>
-                      )}
+                        {/* Always visible "I Have Paid" button so paying customers are NEVER blocked */}
+                        <Button
+                          variant="primary"
+                          fullWidth
+                          onClick={() => {
+                            setKhqrPaid(true);
+                            showToast('✅ បានទទួលការបញ្ជាក់ការទូទាត់! កំពុងបញ្ជូនការកុម្ម៉ង់...', 'success');
+                            setTimeout(() => executeOrderCreation(), 800);
+                          }}
+                          style={{
+                            borderRadius: '12px',
+                            backgroundColor: '#16A34A',
+                            borderColor: '#16A34A',
+                            fontWeight: 700,
+                            padding: '11px',
+                            boxShadow: '0 2px 8px rgba(22, 163, 74, 0.25)'
+                          }}
+                        >
+                          ✅ ខ្ញុំបានបាញ់ប្រាក់រួចហើយ (I Have Paid)
+                        </Button>
+                      </div>
                     </div>
                   ) : null}
                 </div>
