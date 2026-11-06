@@ -4,3 +4,25 @@
 @import './styles/components.css';
 @import './styles/pages.css';
 
+@media print {
+  .no-print,
+  .announcement-bar,
+  header,
+  nav,
+  footer,
+  .navbar,
+  .footer,
+  .toast,
+  .toast-container {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    overflow: hidden !important;
+  }
+}
+

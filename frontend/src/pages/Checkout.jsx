@@ -288,6 +288,58 @@ export const Checkout = () => {
 
     return (
       <div className="section checkout-confirmation-section">
+        {/* Scoped print style to strictly isolate receipt and kill all banners */}
+        <style>{`
+          @media print {
+            @page {
+              size: A4 portrait;
+              margin: 10mm;
+            }
+            html, body {
+              background: #ffffff !important;
+              color: #000000 !important;
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+            body * {
+              visibility: hidden !important;
+            }
+            .printable-invoice,
+            .printable-invoice * {
+              visibility: visible !important;
+            }
+            .printable-invoice {
+              position: fixed !important;
+              left: 50% !important;
+              top: 15px !important;
+              transform: translateX(-50%) !important;
+              width: 100% !important;
+              max-width: 600px !important;
+              margin: 0 !important;
+              padding: 18px 22px !important;
+              border: 1px solid #475569 !important;
+              border-radius: 8px !important;
+              background: #ffffff !important;
+              box-shadow: none !important;
+            }
+            .announcement-bar,
+            .no-print,
+            header,
+            nav,
+            footer,
+            .navbar,
+            .footer {
+              display: none !important;
+              visibility: hidden !important;
+              height: 0 !important;
+              max-height: 0 !important;
+              min-height: 0 !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              overflow: hidden !important;
+            }
+          }
+        `}</style>
         <div className="container">
           <div className="confirmation-card">
             {/* On-screen Only: Success Status Checkmark */}

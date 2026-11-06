@@ -35,7 +35,7 @@ export const Navbar = () => {
 
   return (
     <>
-      {/* Top Announcement Banner (Hidden on Print) */}
+      {/* Top Announcement Banner (Strictly Hidden on Print) */}
       {isBannerActive && announcementText && (
         <div
           className="no-print announcement-bar"
@@ -54,6 +54,23 @@ export const Navbar = () => {
             boxShadow: '0 1px 4px rgba(0,0,0,0.1)'
           }}
         >
+          <style>{`
+            @media print {
+              .announcement-bar,
+              .no-print {
+                display: none !important;
+                visibility: hidden !important;
+                height: 0 !important;
+                min-height: 0 !important;
+                max-height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                background: transparent !important;
+                overflow: hidden !important;
+              }
+            }
+          `}</style>
           <span>📢 {announcementText}</span>
         </div>
       )}
