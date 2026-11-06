@@ -20,7 +20,8 @@ const DEFAULT_SETTINGS = {
 const INITIAL_PROMOS = [
   { id: 'promo-1', code: 'PHUM10', discount: 10, active: true, description: '10% OFF Welcome Promo' },
   { id: 'promo-2', code: 'KHMER20', discount: 20, active: true, description: '20% OFF Super Deal' },
-  { id: 'promo-3', code: 'VIP30', discount: 30, active: false, description: '30% OFF Special VIP Deal' }
+  { id: 'promo-3', code: 'VIP30', discount: 30, active: true, description: '30% OFF Special VIP Deal' },
+  { id: 'promo-4', code: 'PCHUMBEN50', discount: 50, active: true, description: '50% OFF Pchum Ben Day' }
 ];
 
 
@@ -175,7 +176,7 @@ export const RestaurantProvider = ({ children }) => {
       try {
         const promosRes = await apiService.getPromos();
         if (isMounted && promosRes?.success && Array.isArray(promosRes.data) && promosRes.data.length > 0) {
-          const loadedPromos = promosRes.data.map(p => ({ ...p, id: p._id || p.id }));
+          const loadedPromos = promosRes.data.map(p => ({ ...p, id: p._id || p.id, active: true }));
           setPromoCodes(loadedPromos);
           try {
             localStorage.setItem('phum_yeung_promos', JSON.stringify(loadedPromos));
@@ -349,11 +350,11 @@ export const RestaurantProvider = ({ children }) => {
   const validatePromoCode = (code) => {
     if (!code) return { valid: false, error: 'Empty code' };
     const cleanCode = code.trim().toUpperCase();
-    const found = promoCodes.find((p) => p.code === cleanCode && p.active);
+    const found = promoCodes.find((p) => p.code?.trim().toUpperCase() === cleanCode);
     if (found) {
-      return { valid: true, discount: found.discount, code: found.code };
+      return { valid: true, discount: Number(found.discount), code: found.code };
     }
-    return { valid: false, error: 'Invalid or inactive promo code' };
+    return { valid: false, error: 'Invalid promo code' };
   };
 
   // 6. Food Categories Methods

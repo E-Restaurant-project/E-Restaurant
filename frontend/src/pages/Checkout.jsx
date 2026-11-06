@@ -11,7 +11,8 @@ import {
   QrCode,
   MapPin,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Tag
 } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useCart } from '../hooks/useCart';
@@ -38,7 +39,18 @@ const PHNOM_PENH_DISTRICTS = [
 
 export const Checkout = () => {
   const { t, language, formatCurrency, formatDualCurrency } = useLanguage();
-  const { items, subtotal, deliveryFee, discount, total, clearCart } = useCart();
+  const {
+    items,
+    subtotal,
+    deliveryFee,
+    discount,
+    discountPercent,
+    total,
+    clearCart,
+    promoCode,
+    applyPromo,
+    removePromo
+  } = useCart();
   const { createOrder, storeSettings } = useRestaurant();
   const { customerUser } = useAuth();
   const { showToast } = useToast();
@@ -58,11 +70,10 @@ export const Checkout = () => {
   const [khqrLoading, setKhqrLoading] = useState(false);
   const [khqrTimeLeft, setKhqrTimeLeft] = useState(120);
   const [khqrPaid, setKhqrPaid] = useState(false);
-  const [checkingPayment, setCheckingPayment] = useState(false);
-  // 'auto' = auto-poll every 10s | 'manual' = only check when user clicks
-  const [khqrCheckMode, setKhqrCheckMode] = useState('manual');
-  // true when Bakong API returns daily rate-limit error
-  const [apiLimitHit, setApiLimitHit] = useState(false);
+
+  // Promo code input state
+  const [inputPromoCode, setInputPromoCode] = useState('');
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: customerUser?.name || '',
@@ -134,8 +145,6 @@ export const Checkout = () => {
     setKhqrTimeLeft(120);
     setKhqrPaid(false);
     setKhqrData(null);
-    setKhqrCheckMode('auto'); // default: auto-polling for seamless detection
-    setApiLimitHit(false);   // reset rate limit flag
 
     const billNumber = `PY-ORD-${Math.floor(1000 + Math.random() * 9000)}`;
     const res = await apiService.generateBakongKHQR({
@@ -153,55 +162,31 @@ export const Checkout = () => {
     }
   };
 
-  // Check transaction status via MD5
-  const checkPaymentStatus = async (manual = false) => {
-    if (!khqrData?.md5 || khqrPaid) return false;
-    if (manual) setCheckingPayment(true);
-
-    try {
-      const checkRes = await apiService.checkBakongTransaction(khqrData.md5);
-
-      // Detect Bakong daily rate limit hit
-      if (checkRes.isRateLimited || (checkRes.responseCode === 1 &&
-        typeof checkRes.responseMessage === 'string' &&
-        checkRes.responseMessage.toLowerCase().includes('limit'))) {
-        setApiLimitHit(true);
-        setKhqrCheckMode('manual'); // stop auto-polling to save remaining quota
-        if (manual) {
-          showToast('⚠️ Bakong API ដល់ដែនកំណត់ ១០០ ដងក្នុងមួយថ្ងៃ។ សូមចុច "បានទូទាត់រួចហើយ" ដើម្បីបញ្ជូនបន្ត។', 'warning');
-        }
-        return false;
-      }
-
-      // Bakong returns responseCode === 0 when paid, and data contains the transaction hash
-      const isPaid =
-        checkRes.isPaid === true ||
-        checkRes.responseCode === 0 ||
-        checkRes.data?.responseCode === 0 ||
-        Boolean(checkRes.data?.hash);
-
-      if (isPaid) {
-        setKhqrPaid(true);
-        setApiLimitHit(false);
-        showToast('ការទូទាត់តាម Bakong KHQR ទទួលបានជោគជ័យ!', 'success');
-        setTimeout(() => {
-          executeOrderCreation();
-        }, 1000);
-        return true;
-      } else if (manual) {
-        showToast('មិនទាន់ឃើញការទូទាត់ពីធនាគារនៅឡើយទេ។ ប្រសិនបើលោកអ្នកបានកាត់លុយរួចហើយ សូមចុចប៊ូតុង "ខ្ញុំបានបាញ់ប្រាក់រួចហើយ" ខាងក្រោម!', 'warning');
-      }
-    } catch (err) {
-      if (manual) {
-        showToast('មិនអាចពិនិត្យស្ថានភាពបានទេ សូមព្យាយាមម្តងទៀត', 'error');
-      }
-    } finally {
-      if (manual) setCheckingPayment(false);
-    }
-    return false;
+  // Direct payment confirmation via "I Have Paid" button (No polling to conserve Bakong token)
+  const handleConfirmPaid = () => {
+    setKhqrPaid(true);
+    showToast(isKm ? '✅ បានទទួលការបញ្ជាក់ការទូទាត់! កំពុងបញ្ជូនការកុម្ម៉ង់...' : 'Payment confirmed! Placing order...', 'success');
+    setTimeout(() => {
+      executeOrderCreation();
+    }, 600);
   };
 
-  // 1. Countdown Timer (decrements every 1 second until 0)
+  // Apply promo code on checkout
+  const handleApplyCheckoutPromo = async (e) => {
+    if (e) e.preventDefault();
+    if (!inputPromoCode.trim()) return;
+    setIsApplyingPromo(true);
+    const res = await applyPromo(inputPromoCode);
+    setIsApplyingPromo(false);
+    if (res?.success) {
+      showToast(isKm ? `បានបញ្ចូលកូដ ${res.code} បញ្ចុះតម្លៃ ${res.discount}% ជោគជ័យ!` : `Promo code ${res.code} (-${res.discount}%) applied!`, 'success');
+      setInputPromoCode('');
+    } else {
+      showToast(isKm ? 'កូដបញ្ចុះតម្លៃមិនត្រឹមត្រូវទេ' : (res?.error || 'Invalid promo code'), 'error');
+    }
+  };
+
+  // Countdown Timer (decrements every 1 second until 0)
   React.useEffect(() => {
     if (!showKhqrModal || khqrPaid || khqrTimeLeft <= 0) return;
 
@@ -217,27 +202,6 @@ export const Checkout = () => {
 
     return () => clearInterval(timer);
   }, [showKhqrModal, khqrPaid, khqrTimeLeft]);
-
-  // 2. Bakong KHQR Verification Polling — only active in 'auto' mode (every 10s)
-  React.useEffect(() => {
-    if (!showKhqrModal || !khqrData?.md5 || khqrPaid || khqrTimeLeft <= 0) return;
-    if (khqrCheckMode !== 'auto') return; // skip polling in manual mode
-
-    // Check once promptly on open / mode switch
-    const initialTimer = setTimeout(() => {
-      checkPaymentStatus(false);
-    }, 800);
-
-    // Poll every 10 seconds to conserve Bakong daily quota
-    const pollInterval = setInterval(() => {
-      checkPaymentStatus(false);
-    }, 10000);
-
-    return () => {
-      clearTimeout(initialTimer);
-      clearInterval(pollInterval);
-    };
-  }, [showKhqrModal, khqrData?.md5, khqrPaid, khqrTimeLeft, khqrCheckMode]);
 
 
   const handlePlaceOrder = (e) => {
@@ -757,6 +721,87 @@ export const Checkout = () => {
               ))}
             </div>
 
+            {/* Promo / Coupon Code Section */}
+            <div style={{
+              margin: '12px 0',
+              padding: '10px 12px',
+              backgroundColor: '#F8FAFC',
+              borderRadius: '10px',
+              border: '1px dashed #CBD5E1'
+            }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#475569', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Tag size={13} color="#881337" />
+                <span>{isKm ? 'កូដបញ្ចុះតម្លៃ (Promo Code)' : 'Promo / Voucher Code'}</span>
+              </div>
+              {promoCode ? (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  backgroundColor: '#ECFDF5',
+                  border: '1px solid #A7F3D0',
+                  borderRadius: '8px',
+                  padding: '6px 10px',
+                  fontSize: '0.82rem'
+                }}>
+                  <span style={{ color: '#065F46', fontWeight: 700 }}>
+                    ✓ {promoCode} (-{discountPercent}%)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={removePromo}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      color: '#DC2626',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      padding: '2px 4px'
+                    }}
+                  >
+                    {isKm ? 'ដកចេញ' : 'Remove'}
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <input
+                    type="text"
+                    value={inputPromoCode}
+                    onChange={(e) => setInputPromoCode(e.target.value.toUpperCase())}
+                    placeholder={isKm ? 'បញ្ចូលកូដ (ឧ. PHUM10)' : 'Enter code (e.g. PHUM10)'}
+                    style={{
+                      flex: 1,
+                      padding: '6px 10px',
+                      fontSize: '0.82rem',
+                      borderRadius: '6px',
+                      border: '1px solid #CBD5E1',
+                      textTransform: 'uppercase',
+                      fontWeight: 600
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyCheckoutPromo}
+                    disabled={isApplyingPromo}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      backgroundColor: '#881337',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {isApplyingPromo ? (isKm ? '...' : '...') : (isKm ? 'ប្រើប្រាស់' : 'Apply')}
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-sm)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.9rem' }}>
                 <span>{t('cart.subtotal')}:</span>
@@ -977,65 +1022,31 @@ export const Checkout = () => {
                     </Button>
                   ) : !khqrPaid ? (
                     <div>
-                      {/* Rate Limit Warning Banner */}
-                      {apiLimitHit && (
-                        <div style={{
-                          backgroundColor: '#FFFBEB',
-                          border: '1px solid #FCD34D',
-                          borderRadius: '10px',
-                          padding: '10px 14px',
-                          marginBottom: '0.75rem',
-                          fontSize: '0.8rem',
-                          color: '#92400E',
-                          textAlign: 'left'
-                        }}>
-                          <div style={{ fontWeight: 700, marginBottom: '3px' }}>⚠️ Bakong API ដល់ដែនកំណត់ប្រចាំថ្ងៃ</div>
-                          <div style={{ opacity: 0.85 }}>បើអ្នកបានទូទាត់ពិតប្រាកដ សូមចុច <strong>"បានទូទាត់រួចហើយ"</strong> ខាងក្រោម ដើម្បីបញ្ជូនការបញ្ជាទិញ។</div>
-                        </div>
-                      )}
-
-                      {/* Live Auto-detect Status */}
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        fontSize: '0.8rem',
-                        color: '#065F46',
-                        backgroundColor: '#F0FDF4',
-                        padding: '9px 14px',
-                        borderRadius: '12px',
-                        border: '1px solid #BBF7D0',
-                        marginBottom: '0.75rem'
+                      {/* Clear User Instruction */}
+                      <p style={{
+                        fontSize: '0.84rem',
+                        color: '#64748B',
+                        marginBottom: '1rem',
+                        lineHeight: 1.5
                       }}>
-                        <span style={{
-                          display: 'inline-block',
-                          width: '8px',
-                          height: '8px',
-                          borderRadius: '50%',
-                          backgroundColor: '#10B981',
-                          animation: 'pulse 1.5s infinite'
-                        }} />
-                        <span style={{ fontWeight: 600 }}>កំពុងរង់ចាំការទូទាត់ស្វ័យប្រវត្តិ (Auto-Verifying...)</span>
-                      </div>
+                        {isKm
+                          ? 'សូមស្កេនទូទាត់តាម App ធនាគាររបស់អ្នក រួចចុចប៊ូតុងខាងក្រោមដើម្បីបញ្ជូនការកុម្ម៉ង់!'
+                          : 'Please scan & pay with your banking app, then click the button below to submit your order!'}
+                      </p>
 
                       {/* Single Clear Action Button */}
                       <Button
                         variant="primary"
                         fullWidth
-                        onClick={() => {
-                          setKhqrPaid(true);
-                          showToast('✅ បានទទួលការបញ្ជាក់ការទូទាត់! កំពុងបញ្ជូនការកុម្ម៉ង់...', 'success');
-                          setTimeout(() => executeOrderCreation(), 800);
-                        }}
+                        onClick={handleConfirmPaid}
                         style={{
                           borderRadius: '12px',
                           backgroundColor: '#16A34A',
                           borderColor: '#16A34A',
                           fontWeight: 700,
-                          padding: '12px',
-                          fontSize: '0.95rem',
-                          boxShadow: '0 2px 8px rgba(22, 163, 74, 0.25)'
+                          padding: '13px',
+                          fontSize: '0.98rem',
+                          boxShadow: '0 3px 10px rgba(22, 163, 74, 0.3)'
                         }}
                       >
                         ✅ ខ្ញុំបានបាញ់ប្រាក់រួចហើយ (I Have Paid)

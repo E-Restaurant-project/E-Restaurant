@@ -6,7 +6,11 @@ import { Promo } from '../models/Promo.js';
 export const getPromos = async (req, res) => {
   try {
     const promos = await Promo.find().sort({ createdAt: -1 });
-    res.json({ success: true, count: promos.length, data: promos });
+    const normalized = promos.map((p) => {
+      const obj = p.toObject();
+      return { ...obj, active: true };
+    });
+    res.json({ success: true, count: normalized.length, data: normalized });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -17,10 +21,15 @@ export const getPromos = async (req, res) => {
 export const validatePromo = async (req, res) => {
   try {
     const cleanCode = req.params.code.trim().toUpperCase();
-    const promo = await Promo.findOne({ code: cleanCode, active: true });
+    let promo = await Promo.findOne({ code: cleanCode });
 
     if (!promo) {
-      return res.status(404).json({ success: false, message: 'Invalid or inactive promo code' });
+      return res.status(404).json({ success: false, message: 'Invalid promo code' });
+    }
+
+    if (promo.active === false) {
+      promo.active = true;
+      await promo.save();
     }
 
     res.json({ success: true, discount: promo.discount, code: promo.code });

@@ -91,23 +91,31 @@ export const CartProvider = ({ children }) => {
     setDiscountPercent(0);
   };
 
+  const removePromo = () => {
+    setPromoCode('');
+    setDiscountPercent(0);
+  };
+
   const applyPromo = async (code) => {
-    let res = validatePromoCode(code);
+    if (!code || !code.trim()) {
+      return { success: false, error: 'Please enter a promo code' };
+    }
+    const clean = code.trim().toUpperCase();
+    let res = validatePromoCode(clean);
     if (!res?.valid) {
       try {
-        const clean = (code || '').trim().toUpperCase();
         const serverRes = await apiService.validatePromo(clean);
         if (serverRes?.success && serverRes?.discount) {
-          res = { valid: true, discount: serverRes.discount, code: serverRes.code || clean };
+          res = { valid: true, discount: Number(serverRes.discount), code: serverRes.code || clean };
         }
       } catch (_) {}
     }
     if (res?.valid) {
       setPromoCode(res.code);
-      setDiscountPercent(res.discount);
-      return { success: true, discount: res.discount, code: res.code };
+      setDiscountPercent(Number(res.discount));
+      return { success: true, discount: Number(res.discount), code: res.code };
     }
-    return { success: false, error: res?.error || 'Invalid or inactive promo code' };
+    return { success: false, error: res?.error || 'Invalid promo code' };
   };
 
   // Calculations based on dynamic store settings
@@ -137,7 +145,8 @@ export const CartProvider = ({ children }) => {
         removeFromCart,
         updateQuantity,
         clearCart,
-        applyPromo
+        applyPromo,
+        removePromo
       }}
     >
       {children}

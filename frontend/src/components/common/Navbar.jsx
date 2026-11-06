@@ -35,9 +35,10 @@ export const Navbar = () => {
 
   return (
     <>
-      {/* Top Announcement Banner */}
+      {/* Top Announcement Banner (Hidden on Print) */}
       {isBannerActive && announcementText && (
         <div
+          className="no-print announcement-bar"
           style={{
             backgroundColor: 'var(--color-primary, #881337)',
             color: '#fff',
@@ -60,6 +61,7 @@ export const Navbar = () => {
       {/* Closed Notice if Store is Temporarily Closed */}
       {storeSettings?.isOpen === false && (
         <div
+          className="no-print"
           style={{
             backgroundColor: '#d32f2f',
             color: '#fff',

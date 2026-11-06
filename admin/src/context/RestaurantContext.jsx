@@ -567,11 +567,11 @@ export const RestaurantProvider = ({ children }) => {
   const validatePromoCode = (code) => {
     if (!code) return { valid: false, error: 'Empty code' };
     const cleanCode = code.trim().toUpperCase();
-    const found = promoCodes.find((p) => p.code === cleanCode && p.active);
+    const found = promoCodes.find((p) => p.code?.trim().toUpperCase() === cleanCode);
     if (found) {
-      return { valid: true, discount: found.discount, code: found.code };
+      return { valid: true, discount: Number(found.discount), code: found.code };
     }
-    return { valid: false, error: 'Invalid or inactive promo code' };
+    return { valid: false, error: 'Invalid promo code' };
   };
 
   // 6. Food Categories Methods
