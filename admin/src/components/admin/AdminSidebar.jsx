@@ -159,18 +159,6 @@ export const AdminSidebar = ({
         </NavLink>
 
         <NavLink
-          to="/admin/settings"
-          onClick={handleNavClick}
-          className={({ isActive }) =>
-            `admin-sidebar__link ${isActive ? 'admin-sidebar__link--active' : ''}`
-          }
-          title={collapsed ? t('admin.nav_settings') : undefined}
-        >
-          <Settings size={18} style={{ flexShrink: 0 }} />
-          <span>{t('admin.nav_settings')}</span>
-        </NavLink>
-
-        <NavLink
           to="/admin/profile"
           onClick={handleNavClick}
           className={({ isActive }) =>

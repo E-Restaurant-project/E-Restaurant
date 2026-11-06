@@ -10,11 +10,15 @@ import {
   Plus,
   PieChart,
   Calendar,
-  Filter
+  Filter,
+  Save,
+  Power,
+  Settings
 } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useRestaurant } from '../hooks/useRestaurant';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/useToast';
 import { printOrdersReport } from '../utils/printReport';
 import { PrintReportModal } from '../components/admin/PrintReportModal';
 import { Badge } from '../components/common/Badge';
@@ -23,11 +27,68 @@ import { getImageUrl } from '../config/api';
 
 export const AdminDashboard = () => {
   const { t, language, formatCurrency } = useLanguage();
-  const { stats, orders, dishes } = useRestaurant();
+  const { stats, orders, dishes, storeSettings, updateStoreSettings } = useRestaurant();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [isPrintModalOpen, setIsPrintModalOpen] = React.useState(false);
   const [dashboardPeriod, setDashboardPeriod] = React.useState('all'); // 'all' | 'today' | 'yesterday' | 'week' | 'month'
   const isKm = language === 'km';
+
+  const [isSavingSettings, setIsSavingSettings] = React.useState(false);
+  const [quickSettings, setQuickSettings] = React.useState({
+    isOpen: storeSettings?.isOpen ?? true,
+    standardDeliveryFee: storeSettings?.standardDeliveryFee ?? 1.5,
+    freeDeliveryThreshold: storeSettings?.freeDeliveryThreshold ?? 25,
+    khrRate: storeSettings?.khrRate ?? 4100
+  });
+
+  React.useEffect(() => {
+    if (storeSettings) {
+      setQuickSettings({
+        isOpen: storeSettings.isOpen ?? true,
+        standardDeliveryFee: storeSettings.standardDeliveryFee ?? 1.5,
+        freeDeliveryThreshold: storeSettings.freeDeliveryThreshold ?? 25,
+        khrRate: storeSettings.khrRate ?? 4100
+      });
+    }
+  }, [storeSettings]);
+
+  const handleToggleStoreOpen = async (isOpen) => {
+    try {
+      setQuickSettings((prev) => ({ ...prev, isOpen }));
+      await updateStoreSettings({
+        ...storeSettings,
+        isOpen
+      });
+      showToast(
+        isOpen
+          ? (isKm ? 'បានបើកទទួលការកុម្ម៉ង់ (Store Open)' : 'Store is now Open for orders')
+          : (isKm ? 'បានបិទទទួលការកុម្ម៉ង់ (Store Closed)' : 'Store is now Closed for orders'),
+        isOpen ? 'success' : 'warning'
+      );
+    } catch (_) {
+      showToast(isKm ? 'បរាជ័យក្នុងការផ្លាស់ប្តូរស្ថានភាព' : 'Failed to update store status', 'error');
+    }
+  };
+
+  const handleSaveQuickLogistics = async (e) => {
+    if (e) e.preventDefault();
+    setIsSavingSettings(true);
+    try {
+      await updateStoreSettings({
+        ...storeSettings,
+        isOpen: quickSettings.isOpen,
+        standardDeliveryFee: Number(quickSettings.standardDeliveryFee) || 0,
+        freeDeliveryThreshold: Number(quickSettings.freeDeliveryThreshold) || 0,
+        khrRate: Number(quickSettings.khrRate) || 4100
+      });
+      showToast(isKm ? 'បានរក្សាទុកការកំណត់រហ័សជោគជ័យ' : 'Quick settings saved successfully', 'success');
+    } catch (_) {
+      showToast(isKm ? 'បរាជ័យក្នុងការរក្សាទុក' : 'Failed to save settings', 'error');
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   const periodOptions = [
     { id: 'all', label: isKm ? 'គ្រប់ពេល' : 'All Time' },
@@ -165,6 +226,199 @@ export const AdminDashboard = () => {
       </div>
 
       <div className="admin-content">
+        {/* Quick Store Operations & Logistics Bar */}
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '12px',
+            padding: '12px 18px',
+            marginBottom: 'var(--space-xl)',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '14px'
+          }}
+        >
+          {/* Store Kitchen Status Toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Power size={18} color={quickSettings.isOpen ? '#16a34a' : '#dc2626'} />
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark, #881337)' }}>
+                {isKm ? 'ស្ថានភាពហាង :' : 'Store Status:'}
+              </span>
+            </div>
+
+            <div style={{ display: 'inline-flex', padding: '3px', backgroundColor: '#f1f5f9', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <button
+                type="button"
+                onClick={() => handleToggleStoreOpen(true)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  border: 'none',
+                  cursor: 'pointer',
+                  backgroundColor: quickSettings.isOpen ? '#15803d' : 'transparent',
+                  color: quickSettings.isOpen ? '#ffffff' : '#475569',
+                  boxShadow: quickSettings.isOpen ? '0 1px 3px rgba(21,128,61,0.25)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: quickSettings.isOpen ? '#4ade80' : '#94a3b8' }}></span>
+                {isKm ? 'កំពុងបើក (Open)' : 'Open'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleToggleStoreOpen(false)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  border: 'none',
+                  cursor: 'pointer',
+                  backgroundColor: !quickSettings.isOpen ? '#b91c1c' : 'transparent',
+                  color: !quickSettings.isOpen ? '#ffffff' : '#475569',
+                  boxShadow: !quickSettings.isOpen ? '0 1px 3px rgba(185,28,28,0.25)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: !quickSettings.isOpen ? '#f87171' : '#94a3b8' }}></span>
+                {isKm ? 'បិទហាង (Closed)' : 'Closed'}
+              </button>
+            </div>
+
+            <span style={{ fontSize: '0.75rem', color: '#64748b', fontStyle: 'italic' }}>
+              {quickSettings.isOpen
+                ? (isKm ? '(អតិថិជនអាចកុម្ម៉ង់បាន)' : '(Customers can order)')
+                : (isKm ? '(ផ្អាកការកុម្ម៉ង់បណ្តោះអាសន្ន)' : '(Ordering paused)')}
+            </span>
+          </div>
+
+          {/* Quick Logistics Inputs */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            {/* Delivery Fee */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#334155', whiteSpace: 'nowrap' }}>
+                🛵 {isKm ? 'ថ្លៃដឹក :' : 'Delivery:'}
+              </span>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <span style={{ position: 'absolute', left: '7px', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8' }}>$</span>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={quickSettings.standardDeliveryFee}
+                  onChange={(e) => setQuickSettings((p) => ({ ...p, standardDeliveryFee: e.target.value }))}
+                  style={{
+                    width: '68px',
+                    padding: '4px 6px 4px 18px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    backgroundColor: '#f8fafc',
+                    color: '#0f172a'
+                  }}
+                  title={isKm ? 'ថ្លៃដឹកជញ្ជូនគោល' : 'Standard Delivery Fee'}
+                />
+              </div>
+            </div>
+
+            {/* Free Delivery Threshold */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#334155', whiteSpace: 'nowrap' }}>
+                🎁 {isKm ? 'ដឹកឥតគិតថ្លៃ >' : 'Free Over:'}
+              </span>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <span style={{ position: 'absolute', left: '7px', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8' }}>$</span>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={quickSettings.freeDeliveryThreshold}
+                  onChange={(e) => setQuickSettings((p) => ({ ...p, freeDeliveryThreshold: e.target.value }))}
+                  style={{
+                    width: '68px',
+                    padding: '4px 6px 4px 18px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    backgroundColor: '#f8fafc',
+                    color: '#0f172a'
+                  }}
+                  title={isKm ? 'ដឹកឥតគិតថ្លៃសម្រាប់កម្ម៉ង់លើសពី' : 'Free Delivery Threshold'}
+                />
+              </div>
+            </div>
+
+            {/* KHR Exchange Rate */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#334155', whiteSpace: 'nowrap' }}>
+                💱 {isKm ? '1$ =' : '1$ ='}
+              </span>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input
+                  type="number"
+                  step="50"
+                  min="1000"
+                  value={quickSettings.khrRate}
+                  onChange={(e) => setQuickSettings((p) => ({ ...p, khrRate: e.target.value }))}
+                  style={{
+                    width: '74px',
+                    padding: '4px 18px 4px 6px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    backgroundColor: '#f8fafc',
+                    color: '#0f172a'
+                  }}
+                  title={isKm ? 'អត្រាប្តូរប្រាក់រៀល' : 'KHR Exchange Rate'}
+                />
+                <span style={{ position: 'absolute', right: '5px', fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8' }}>៛</span>
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <button
+              type="button"
+              onClick={handleSaveQuickLogistics}
+              disabled={isSavingSettings}
+              style={{
+                padding: '5px 12px',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                backgroundColor: '#881337',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                boxShadow: '0 1px 3px rgba(136,19,55,0.2)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Save size={13} />
+              <span>{isSavingSettings ? (isKm ? '...' : '...') : (isKm ? 'រក្សាទុក' : 'Save')}</span>
+            </button>
+          </div>
+        </div>
+
         {/* Metric Cards */}
         <div className="admin-stats-grid">
           {/* Revenue */}
