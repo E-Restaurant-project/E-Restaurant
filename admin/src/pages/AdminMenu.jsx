@@ -437,32 +437,6 @@ export const AdminMenu = () => {
                               <strong style={{ color: '#0f172a' }}>{createdName}</strong>
                             </div>
 
-                            {updatedName && updatedName !== createdName && (
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '5px',
-                                  marginTop: '3px',
-                                  color: '#475569'
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    backgroundColor: '#fef3c7',
-                                    color: '#b45309',
-                                    padding: '1px 5px',
-                                    borderRadius: '4px',
-                                    fontSize: '0.68rem',
-                                    fontWeight: 700
-                                  }}
-                                >
-                                  {isKm ? 'កែប្រែ' : 'Edit'}
-                                </span>
-                                <span>{updatedName}</span>
-                              </div>
-                            )}
-
                             <button
                               type="button"
                               onClick={() => setSelectedDishForLogs(dish)}
@@ -473,7 +447,7 @@ export const AdminMenu = () => {
                                 fontSize: '0.74rem',
                                 fontWeight: 600,
                                 cursor: 'pointer',
-                                padding: '2px 0 0 0',
+                                padding: '4px 0 0 0',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '3px',
@@ -639,6 +613,23 @@ export const AdminMenu = () => {
                   <Clock size={13} />
                   <span>{formatLogDate(selectedDishForLogs.createdBy?.at || selectedDishForLogs.createdAt)}</span>
                 </div>
+
+                {selectedDishForLogs.updatedBy?.name && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #bae6fd' }}>
+                    <ShieldCheck size={16} color="#d97706" />
+                    <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a' }}>
+                      {isKm ? 'អ្នកកែប្រែចុងក្រោយ' : 'Last Modified By'}:
+                    </span>
+                    <span style={{ color: '#b45309', fontWeight: 800 }}>
+                      {selectedDishForLogs.updatedBy.name}
+                    </span>
+                    {selectedDishForLogs.updatedBy.at && (
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                        ({formatLogDate(selectedDishForLogs.updatedBy.at)})
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Activity Timeline */}
