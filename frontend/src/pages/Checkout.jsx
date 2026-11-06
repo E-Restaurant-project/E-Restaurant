@@ -994,115 +994,52 @@ export const Checkout = () => {
                         </div>
                       )}
 
-                      {/* Mode Toggle: Auto / Manual */}
+                      {/* Live Auto-detect Status */}
                       <div style={{
                         display: 'flex',
-                        backgroundColor: '#F1F5F9',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        fontSize: '0.8rem',
+                        color: '#065F46',
+                        backgroundColor: '#F0FDF4',
+                        padding: '9px 14px',
                         borderRadius: '12px',
-                        padding: '3px',
-                        gap: '3px',
+                        border: '1px solid #BBF7D0',
                         marginBottom: '0.75rem'
                       }}>
-                        <button
-                          onClick={() => !apiLimitHit && setKhqrCheckMode('auto')}
-                          style={{
-                            flex: 1,
-                            padding: '7px 10px',
-                            borderRadius: '10px',
-                            border: 'none',
-                            cursor: apiLimitHit ? 'not-allowed' : 'pointer',
-                            fontWeight: 600,
-                            fontSize: '0.8rem',
-                            transition: 'all 0.2s',
-                            backgroundColor: khqrCheckMode === 'auto' ? '#ffffff' : 'transparent',
-                            color: apiLimitHit ? '#CBD5E1' : (khqrCheckMode === 'auto' ? '#10B981' : '#64748B'),
-                            boxShadow: khqrCheckMode === 'auto' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
-                            opacity: apiLimitHit ? 0.5 : 1
-                          }}
-                        >
-                          <span style={{ marginRight: '4px' }}>🔁</span>
-                          Auto
-                        </button>
-                        <button
-                          onClick={() => setKhqrCheckMode('manual')}
-                          style={{
-                            flex: 1,
-                            padding: '7px 10px',
-                            borderRadius: '10px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontWeight: 600,
-                            fontSize: '0.8rem',
-                            transition: 'all 0.2s',
-                            backgroundColor: khqrCheckMode === 'manual' ? '#ffffff' : 'transparent',
-                            color: khqrCheckMode === 'manual' ? '#3B82F6' : '#64748B',
-                            boxShadow: khqrCheckMode === 'manual' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none'
-                          }}
-                        >
-                          <span style={{ marginRight: '4px' }}>👆</span>
-                          Manual
-                        </button>
+                        <span style={{
+                          display: 'inline-block',
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          backgroundColor: '#10B981',
+                          animation: 'pulse 1.5s infinite'
+                        }} />
+                        <span style={{ fontWeight: 600 }}>កំពុងរង់ចាំការទូទាត់ស្វ័យប្រវត្តិ (Auto-Verifying...)</span>
                       </div>
 
-                      {/* Status & Actions */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {khqrCheckMode === 'auto' && !apiLimitHit ? (
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '6px',
-                            fontSize: '0.78rem',
-                            color: '#64748B',
-                            backgroundColor: '#F0FDF4',
-                            padding: '8px 12px',
-                            borderRadius: '10px',
-                            border: '1px solid #BBF7D0'
-                          }}>
-                            <span style={{
-                              display: 'inline-block',
-                              width: '6px',
-                              height: '6px',
-                              borderRadius: '50%',
-                              backgroundColor: '#10B981',
-                              animation: 'pulse 1.5s infinite'
-                            }} />
-                            <span style={{ color: '#065F46', fontWeight: 600 }}>ត្រួតពិនិត្យស្វ័យប្រវត្តិតាម Bakong API...</span>
-                          </div>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            fullWidth
-                            disabled={checkingPayment}
-                            onClick={() => checkPaymentStatus(true)}
-                            icon={<RefreshCw size={15} style={{ animation: checkingPayment ? 'spin 1s linear infinite' : 'none' }} />}
-                            style={{ borderRadius: '12px', borderColor: '#3B82F6', color: '#3B82F6', fontWeight: 700 }}
-                          >
-                            {checkingPayment ? 'កំពុងពិនិត្យ...' : '🔄 ពិនិត្យការទូទាត់ (Check Payment)'}
-                          </Button>
-                        )}
-
-                        {/* Always visible "I Have Paid" button so paying customers are NEVER blocked */}
-                        <Button
-                          variant="primary"
-                          fullWidth
-                          onClick={() => {
-                            setKhqrPaid(true);
-                            showToast('✅ បានទទួលការបញ្ជាក់ការទូទាត់! កំពុងបញ្ជូនការកុម្ម៉ង់...', 'success');
-                            setTimeout(() => executeOrderCreation(), 800);
-                          }}
-                          style={{
-                            borderRadius: '12px',
-                            backgroundColor: '#16A34A',
-                            borderColor: '#16A34A',
-                            fontWeight: 700,
-                            padding: '11px',
-                            boxShadow: '0 2px 8px rgba(22, 163, 74, 0.25)'
-                          }}
-                        >
-                          ✅ ខ្ញុំបានបាញ់ប្រាក់រួចហើយ (I Have Paid)
-                        </Button>
-                      </div>
+                      {/* Single Clear Action Button */}
+                      <Button
+                        variant="primary"
+                        fullWidth
+                        onClick={() => {
+                          setKhqrPaid(true);
+                          showToast('✅ បានទទួលការបញ្ជាក់ការទូទាត់! កំពុងបញ្ជូនការកុម្ម៉ង់...', 'success');
+                          setTimeout(() => executeOrderCreation(), 800);
+                        }}
+                        style={{
+                          borderRadius: '12px',
+                          backgroundColor: '#16A34A',
+                          borderColor: '#16A34A',
+                          fontWeight: 700,
+                          padding: '12px',
+                          fontSize: '0.95rem',
+                          boxShadow: '0 2px 8px rgba(22, 163, 74, 0.25)'
+                        }}
+                      >
+                        ✅ ខ្ញុំបានបាញ់ប្រាក់រួចហើយ (I Have Paid)
+                      </Button>
                     </div>
                   ) : null}
                 </div>
