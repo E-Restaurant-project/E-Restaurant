@@ -1,29 +1,36 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
 
 const ToastContext = createContext(null);
 
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
+  const timerRef = useRef(null);
 
   const removeToast = useCallback((id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const showToast = useCallback((message, type = 'success', duration = 3600) => {
+  const showToast = useCallback((message, type = 'success', duration = 3200) => {
     setToasts((prev) => {
-      // Prevent stacking identical toast messages
+      // If the exact same message is already visible, do not re-add or flash
       if (prev.some((t) => t.message === message)) {
         return prev;
       }
+
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+
       const id = Date.now() + Math.random().toString();
       const newToast = { id, message, type, duration };
-      setTimeout(() => {
+
+      timerRef.current = setTimeout(() => {
         removeToast(id);
       }, duration);
-      // Cap at most 2 active toasts so it never blocks the modal or screen
-      const trimmed = prev.length >= 2 ? prev.slice(prev.length - 1) : prev;
-      return [...trimmed, newToast];
+
+      // Enforce at most 1 active toast at any moment so toasts never stack over modals
+      return [newToast];
     });
   }, [removeToast]);
 

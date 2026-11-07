@@ -29,7 +29,7 @@ const orderSchema = new mongoose.Schema(
     address: { type: String, default: '' },
     pickupTime: { type: String, default: '' },
     notes: { type: String, default: '' },
-    paymentMethod: { type: String, enum: ['cod', 'khqr'], default: 'cod' },
+    paymentMethod: { type: String, enum: ['khqr'], default: 'khqr' },
     items: [orderItemSchema],
     subtotal: { type: Number, required: true, default: 0 },
     deliveryFee: { type: Number, default: 0 },

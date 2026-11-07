@@ -232,12 +232,16 @@ export const Checkout = () => {
     if (isCheckingPayment || khqrPaid || isSubmittingOrderRef.current) return;
     setIsCheckingPayment(true);
     
-    const verified = await verifyBakongPayment(false);
+    // On 2nd click (or if API limit hit), allow customer confirm without showing false warning toast
+    const currentAttempts = manualCheckAttempts;
+    const isRetryConfirm = currentAttempts >= 1 || apiLimitHit;
+
+    const verified = await verifyBakongPayment(isRetryConfirm);
     if (!verified) {
-      const nextAttempt = manualCheckAttempts + 1;
+      const nextAttempt = currentAttempts + 1;
       setManualCheckAttempts(nextAttempt);
 
-      // If user confirms again (e.g. real money paid or token limit/delay):
+      // If customer confirms again on delay/limit:
       if (nextAttempt >= 2 || apiLimitHit) {
         setKhqrPaid(true);
         showToast(
