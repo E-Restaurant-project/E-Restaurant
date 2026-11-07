@@ -941,6 +941,7 @@ export const Checkout = () => {
                     placeholder={isKm ? 'បញ្ចូលកូដ (ឧ. PHUM10)' : 'Enter code (e.g. PHUM10)'}
                     style={{
                       flex: 1,
+                      minWidth: 0,
                       padding: '6px 10px',
                       fontSize: '0.82rem',
                       borderRadius: '6px',

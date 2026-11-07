@@ -1114,19 +1114,20 @@
   }
 
   .modal-overlay {
-    padding: 12px;
+    padding: 8px !important;
   }
 
   .modal-card {
     width: 100% !important;
-    max-height: 90vh;
+    max-width: 96vw !important;
+    max-height: 92vh !important;
     border-radius: var(--radius-lg);
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
 
   .modal-header {
-    padding: 14px 16px;
+    padding: 10px 14px;
   }
 
   .modal-body {

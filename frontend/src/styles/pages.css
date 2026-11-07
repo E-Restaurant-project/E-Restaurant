@@ -1774,6 +1774,132 @@
   }
 }
 
+@media (max-width: 768px) {
+  .checkout-layout {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .checkout-section {
+    padding: 16px 14px !important;
+    margin-bottom: 14px !important;
+    border-radius: 14px !important;
+  }
+
+  .checkout-section__title {
+    font-size: 1.05rem !important;
+    margin-bottom: 12px !important;
+  }
+
+  .confirmation-card {
+    padding: 20px 14px !important;
+    margin: 16px auto !important;
+    border-radius: 16px !important;
+  }
+
+  .printable-invoice {
+    padding: 16px 14px !important;
+    margin: 14px 0 !important;
+    border-radius: 12px !important;
+  }
+
+  .invoice-info-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 14px;
+    font-size: 0.84rem;
+  }
+
+  .confirmation-actions {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+
+  .confirmation-actions a,
+  .confirmation-actions .btn {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .checkout-page {
+    padding-top: var(--space-md);
+  }
+
+  .checkout-page h1 {
+    font-size: 1.45rem !important;
+  }
+
+  .checkout-form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .order-type-selector {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .order-type-btn {
+    padding: 10px 6px !important;
+    border-radius: 12px !important;
+    min-height: 76px !important;
+    justify-content: center !important;
+  }
+
+  .order-type-btn svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .order-type-btn span {
+    font-size: 0.8rem !important;
+  }
+
+  .invoice-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .invoice-meta {
+    text-align: left !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    padding-top: 6px !important;
+    border-top: 1px dashed #e2e8f0 !important;
+  }
+
+  .invoice-info-grid {
+    grid-template-columns: 1fr !important;
+    gap: 4px !important;
+    font-size: 0.82rem !important;
+  }
+
+  .invoice-table {
+    font-size: 0.8rem !important;
+  }
+
+  .invoice-table th,
+  .invoice-table td {
+    padding: 6px 4px !important;
+  }
+
+  .invoice-summary {
+    font-size: 0.82rem !important;
+  }
+
+  .invoice-grand-total {
+    font-size: 1.05rem !important;
+  }
+}
+
 @media (max-width: 480px) {
   .hero__stats {
     gap: 4px;
@@ -1794,6 +1920,74 @@
   .menu-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 8px;
+  }
+
+  /* Compact Cart & Checkout on Mobile Phones */
+  .cart-item {
+    grid-template-columns: 56px 1fr auto !important;
+    gap: 10px !important;
+    padding: 10px 8px !important;
+  }
+
+  .cart-item__img {
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 8px !important;
+  }
+
+  .cart-item__title {
+    font-size: 0.86rem !important;
+  }
+
+  .checkout-section {
+    padding: 12px 10px !important;
+  }
+
+  .checkout-layout .card {
+    padding: 12px 10px !important;
+  }
+
+  .confirmation-card {
+    padding: 14px 10px !important;
+  }
+
+  .printable-invoice {
+    padding: 12px 8px !important;
+  }
+
+  .invoice-logo {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .invoice-title-km {
+    font-size: 0.96rem !important;
+  }
+
+  .invoice-title-en {
+    font-size: 0.68rem !important;
+  }
+
+  .invoice-subtitle {
+    font-size: 0.68rem !important;
+  }
+
+  .invoice-table {
+    font-size: 0.74rem !important;
+  }
+
+  .invoice-table th:first-child,
+  .invoice-table td:first-child {
+    display: none !important; /* Hide index # column on small phones */
+  }
+
+  .invoice-footer-thanks {
+    font-size: 0.78rem !important;
+  }
+
+  .invoice-footer-contact,
+  .invoice-footer-note {
+    font-size: 0.68rem !important;
   }
 }
 
