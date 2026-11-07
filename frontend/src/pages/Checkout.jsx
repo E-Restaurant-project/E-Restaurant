@@ -989,71 +989,67 @@ export const Checkout = () => {
           setKhqrPaid(false);
         }}
         title="Bakong KHQR"
-        maxWidth="410px"
+        maxWidth="380px"
+        headerPadding="10px 16px"
+        bodyPadding="0"
       >
-        <div style={{ textAlign: 'center', margin: '-1.25rem -1.25rem 0 -1.25rem' }}>
-          {/* Official Red KHQR Header */}
+        <div style={{ textAlign: 'center' }}>
+          {/* Official Red KHQR Header - Compact & Brand Clean (No Bakong ID) */}
           <div style={{
             background: 'linear-gradient(135deg, #E11938 0%, #B91C1C 100%)',
-            padding: '1.25rem 1.25rem 1rem 1.25rem',
+            padding: '0.75rem 1rem 0.65rem 1rem',
             color: '#ffffff',
             borderRadius: '12px 12px 0 0'
           }}>
-            {/* Logo + KHQR Badge row */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
               <img
                 src="/phum_yeung_logo.jpg"
                 alt="Phum Yeung"
                 style={{
-                  width: '44px',
-                  height: '44px',
+                  width: '32px',
+                  height: '32px',
                   borderRadius: '50%',
                   objectFit: 'cover',
-                  border: '2px solid rgba(255,255,255,0.7)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                  border: '1.5px solid rgba(255,255,255,0.85)',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
                 }}
               />
+              <span style={{ fontSize: '0.96rem', fontWeight: 800, color: '#ffffff', letterSpacing: '0.2px' }}>
+                Phum Yeung Restaurant
+              </span>
               <div style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '6px',
                 backgroundColor: 'rgba(255, 255, 255, 0.22)',
-                padding: '4px 14px',
-                borderRadius: '20px',
-                fontSize: '0.8rem',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontSize: '0.68rem',
                 fontWeight: 800,
-                letterSpacing: '1px'
+                letterSpacing: '0.5px'
               }}>
                 <span style={{ color: '#ffffff' }}>KHQR</span>
-                <span style={{ fontSize: '0.7rem', opacity: 0.9, fontWeight: 600 }}>BAKONG</span>
               </div>
-            </div>
-            <h3 style={{ margin: '2px 0', fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>
-              Phum Yeung Restaurant
-            </h3>
-            <div style={{ fontSize: '0.82rem', opacity: 0.92, marginTop: '2px' }}>
-              Bakong ID: <strong style={{ color: '#ffffff' }}>{khqrData?.bakongAccountID || 'vatana@bkrt'}</strong>
             </div>
           </div>
 
-          <div style={{ padding: '1.25rem 1.25rem 1.5rem 1.25rem' }}>
+          <div style={{ padding: '0.75rem 1rem 1rem 1rem' }}>
             {khqrLoading ? (
-              <div style={{ padding: '50px 20px', color: 'var(--color-text-muted)' }}>
-                <RefreshCw size={28} style={{ animation: 'spin 1.5s linear infinite', margin: '0 auto 12px' }} />
-                <p style={{ fontWeight: 600 }}>{t('common.loading')} Bakong KHQR...</p>
+              <div style={{ padding: '36px 20px', color: 'var(--color-text-muted)' }}>
+                <RefreshCw size={26} style={{ animation: 'spin 1.5s linear infinite', margin: '0 auto 10px' }} />
+                <p style={{ fontWeight: 600, fontSize: '0.9rem' }}>{t('common.loading')} Bakong KHQR...</p>
               </div>
             ) : khqrData?.qrImage ? (
               <div>
-                {/* QR Code Container */}
+                {/* QR Code Container - Compact & Crisp */}
                 <div style={{
                   position: 'relative',
                   background: '#ffffff',
-                  padding: '10px',
-                  borderRadius: '16px',
+                  padding: '8px',
+                  borderRadius: '12px',
                   display: 'inline-block',
-                  maxWidth: '230px',
+                  maxWidth: '175px',
                   width: '100%',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
                   border: '1px solid #E5E7EB',
                   overflow: 'hidden'
                 }}>
@@ -1062,7 +1058,7 @@ export const Checkout = () => {
                     alt="Bakong KHQR"
                     style={{
                       width: '100%',
-                      maxWidth: '210px',
+                      maxWidth: '160px',
                       height: 'auto',
                       aspectRatio: '1 / 1',
                       display: 'block',
@@ -1078,80 +1074,81 @@ export const Checkout = () => {
                       left: 0,
                       right: 0,
                       bottom: 0,
-                      backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.94)',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      padding: '16px',
+                      padding: '12px',
                       textAlign: 'center'
                     }}>
-                      <AlertCircle size={38} color="#DC2626" style={{ marginBottom: '6px' }} />
-                      <strong style={{ color: '#DC2626', fontSize: '0.98rem', fontWeight: 700 }}>កូដ QR ផុតកំណត់ហើយ</strong>
-                      <span style={{ fontSize: '0.78rem', color: '#6B7280', marginTop: '2px' }}>QR Code Expired</span>
+                      <AlertCircle size={32} color="#DC2626" style={{ marginBottom: '4px' }} />
+                      <strong style={{ color: '#DC2626', fontSize: '0.88rem', fontWeight: 700 }}>កូដ QR ផុតកំណត់ហើយ</strong>
+                      <span style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '1px' }}>QR Code Expired</span>
                     </div>
                   )}
                 </div>
 
                 {/* Amount */}
-                <div style={{ marginTop: '0.9rem' }}>
-                  <div style={{ fontSize: '1.65rem', fontWeight: 800, color: '#111827', letterSpacing: '-0.5px' }}>
+                <div style={{ marginTop: '0.4rem' }}>
+                  <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#111827', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
                     {khqrData.amount?.toLocaleString()} ៛
                   </div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#6B7280', marginTop: '1px' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#6B7280', marginTop: '1px' }}>
                     ≈ {dualTotal.usd} USD
                   </div>
                 </div>
 
                 {/* Status & Countdown Timer */}
-                <div style={{ marginTop: '0.9rem' }}>
+                <div style={{ marginTop: '0.35rem' }}>
                   {khqrPaid ? (
                     <div style={{
-                      padding: '10px 16px',
+                      padding: '8px 12px',
                       backgroundColor: '#ECFDF5',
-                      borderRadius: '12px',
+                      borderRadius: '10px',
                       border: '1px solid #A7F3D0',
                       color: '#065F46',
                       fontWeight: 700,
+                      fontSize: '0.82rem',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '8px'
+                      gap: '6px'
                     }}>
-                      <CheckCircle size={20} color="#10B981" />
-                      <span>ការទូទាត់ទទួលបានជោគជ័យ! កំពុងបញ្ជូន...</span>
+                      <CheckCircle size={18} color="#10B981" />
+                      <span>ការទូទាត់ទទួលបានជោគជ័យ!</span>
                     </div>
                   ) : khqrTimeLeft <= 0 ? (
                     <div style={{
-                      padding: '10px 14px',
+                      padding: '8px 12px',
                       backgroundColor: '#FEF2F2',
-                      borderRadius: '12px',
+                      borderRadius: '10px',
                       border: '1px solid #FECACA',
                       color: '#991B1B',
-                      fontSize: '0.85rem',
+                      fontSize: '0.8rem',
                       fontWeight: 600
                     }}>
                       ⚠️ កូដ QR បានផុតកំណត់រយៈពេល ១២០ វិនាទី
                     </div>
                   ) : (
                     <div style={{
-                      padding: '7px 14px',
+                      padding: '4px 12px',
                       backgroundColor: '#F8FAFC',
-                      borderRadius: '24px',
+                      borderRadius: '20px',
                       border: '1px solid #E2E8F0',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '8px',
-                      fontSize: '0.82rem',
+                      gap: '6px',
+                      fontSize: '0.75rem',
                       color: '#475569'
                     }}>
                       <span style={{
-                        width: '8px',
-                        height: '8px',
+                        width: '7px',
+                        height: '7px',
                         borderRadius: '50%',
                         backgroundColor: '#10B981',
                         display: 'inline-block',
-                        boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.2)'
+                        boxShadow: '0 0 0 2px rgba(16, 185, 129, 0.2)'
                       }} />
                       <span>រង់ចាំការទូទាត់</span>
                       <span style={{ color: '#CBD5E1' }}>•</span>
@@ -1161,14 +1158,14 @@ export const Checkout = () => {
                 </div>
 
                 {/* Actions / Status indicator */}
-                <div style={{ marginTop: '0.75rem' }}>
+                <div style={{ marginTop: '0.5rem' }}>
                   {khqrTimeLeft <= 0 && !khqrPaid ? (
                     <Button
                       variant="primary"
                       fullWidth
                       onClick={handleInitiateKhqr}
-                      icon={<RefreshCw size={16} />}
-                      style={{ borderRadius: '12px', padding: '10px' }}
+                      icon={<RefreshCw size={15} />}
+                      style={{ borderRadius: '10px', padding: '9px', fontSize: '0.86rem' }}
                     >
                       🔄 បង្កើតកូដ QR ថ្មី (Generate New QR)
                     </Button>
@@ -1179,20 +1176,20 @@ export const Checkout = () => {
                         <div style={{
                           backgroundColor: '#FFFBEB',
                           border: '1.5px solid #FCD34D',
-                          borderRadius: '12px',
-                          padding: '10px 14px',
-                          marginBottom: '0.75rem',
-                          fontSize: '0.82rem',
+                          borderRadius: '10px',
+                          padding: '8px 12px',
+                          marginBottom: '0.5rem',
+                          fontSize: '0.78rem',
                           color: '#92400E',
                           textAlign: 'left'
                         }}>
-                          <div style={{ fontWeight: 700, marginBottom: '3px' }}>
+                          <div style={{ fontWeight: 700, marginBottom: '2px' }}>
                             ⚠️ Bakong Token ដល់ដែនកំណត់ប្រចាំថ្ងៃ (NBC 100/Day Exceeded)
                           </div>
-                          <div style={{ opacity: 0.9, lineHeight: 1.4, fontSize: '0.78rem' }}>
+                          <div style={{ opacity: 0.9, lineHeight: 1.35, fontSize: '0.74rem' }}>
                             {isKm
-                              ? 'ដោយសារកូតា Token របស់ធនាគារជាតិ NBC អស់ ១០០ ដង/ថ្ងៃ។ ប្រសិនបើលោកអ្នកបានផ្ទេរប្រាក់ពិតប្រាកដរួចហើយ សូមចុចប៊ូតុងខាងក្រោមដើម្បីបញ្ជូនការកុម្ម៉ង់។'
-                              : 'NBC Bakong developer token has exceeded its 100 requests/day limit. If you have already transferred funds, click below to submit.'}
+                              ? 'ដោយសារកូតា Token របស់ធនាគារជាតិ NBC អស់ ១០០ ដង/ថ្ងៃ។ ប្រសិនបើលោកអ្នកបានផ្ទេរប្រាក់រួចហើយ សូមចុចប៊ូតុងខាងក្រោមដើម្បីបញ្ជូនការកុម្ម៉ង់។'
+                              : 'NBC Bakong developer token has exceeded its 100 req/day limit. If you transferred funds, click below to submit.'}
                           </div>
                           <button
                             type="button"
@@ -1202,15 +1199,15 @@ export const Checkout = () => {
                               setTimeout(() => executeOrderCreation(), 600);
                             }}
                             style={{
-                              marginTop: '8px',
+                              marginTop: '6px',
                               width: '100%',
                               backgroundColor: '#16A34A',
                               color: '#fff',
                               border: 'none',
                               borderRadius: '8px',
-                              padding: '10px',
+                              padding: '8px 12px',
                               fontWeight: 700,
-                              fontSize: '0.88rem',
+                              fontSize: '0.82rem',
                               cursor: 'pointer',
                               boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)'
                             }}
@@ -1220,13 +1217,13 @@ export const Checkout = () => {
                         </div>
                       )}
 
-                      {/* Cycle/Pill-Shaped Segmented Tab Switch (Like Auth signin/signup) */}
+                      {/* Cycle/Pill-Shaped Segmented Tab Switch */}
                       <div
                         className="auth-segmented-nav"
                         style={{
-                          margin: '0 0 1rem 0',
-                          padding: '3px',
-                          borderRadius: '24px',
+                          margin: '0 0 0.5rem 0',
+                          padding: '2px',
+                          borderRadius: '20px',
                           backgroundColor: '#f1f5f9',
                           border: '1px solid #e2e8f0'
                         }}
@@ -1236,9 +1233,9 @@ export const Checkout = () => {
                           className={`auth-segmented-btn ${khqrMode === 'manual' ? 'auth-segmented-btn--active' : ''}`}
                           onClick={() => setKhqrMode('manual')}
                           style={{
-                            borderRadius: '20px',
-                            padding: '8px 14px',
-                            fontSize: '0.82rem',
+                            borderRadius: '16px',
+                            padding: '6px 12px',
+                            fontSize: '0.76rem',
                             fontWeight: 700
                           }}
                         >
@@ -1250,9 +1247,9 @@ export const Checkout = () => {
                           className={`auth-segmented-btn ${khqrMode === 'auto' ? 'auth-segmented-btn--active' : ''}`}
                           onClick={() => setKhqrMode('auto')}
                           style={{
-                            borderRadius: '20px',
-                            padding: '8px 14px',
-                            fontSize: '0.82rem',
+                            borderRadius: '16px',
+                            padding: '6px 12px',
+                            fontSize: '0.76rem',
                             fontWeight: 700
                           }}
                         >
@@ -1261,33 +1258,33 @@ export const Checkout = () => {
                         </button>
                       </div>
 
-                      {/* Mode 1: Auto Verify (NO button shown! Clean animated status) */}
+                      {/* Mode 1: Auto Verify */}
                       {khqrMode === 'auto' ? (
                         <div style={{
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          gap: '10px',
+                          gap: '8px',
                           backgroundColor: '#F0FDF4',
                           border: '1.5px solid #86EFAC',
-                          borderRadius: '14px',
-                          padding: '12px 16px',
+                          borderRadius: '10px',
+                          padding: '10px 14px',
                           color: '#15803D',
-                          fontSize: '0.84rem',
+                          fontSize: '0.8rem',
                           fontWeight: 600,
-                          boxShadow: '0 2px 8px rgba(34, 197, 94, 0.1)'
+                          boxShadow: '0 2px 6px rgba(34, 197, 94, 0.08)'
                         }}>
-                          <RefreshCw size={16} style={{ animation: 'spin 2s linear infinite', color: '#16A34A' }} />
+                          <RefreshCw size={14} style={{ animation: 'spin 2s linear infinite', color: '#16A34A' }} />
                           <span>{isKm ? 'កំពុងរង់ចាំការទូទាត់ពី App ធនាគារដោយស្វ័យប្រវត្តិ...' : 'Auto-checking bank payment...'}</span>
                         </div>
                       ) : (
-                        /* Mode 2: Manual Click (Shows button, clicks to verify strictly with bank — NO BYPASS!) */
+                        /* Mode 2: Manual Click */
                         <div>
                           <p style={{
-                            fontSize: '0.82rem',
+                            fontSize: '0.76rem',
                             color: '#64748B',
-                            marginBottom: '0.75rem',
-                            lineHeight: 1.5
+                            marginBottom: '0.45rem',
+                            lineHeight: 1.35
                           }}>
                             {isKm
                               ? 'សូមស្កេនបាញ់លុយតាម App ធនាគាររបស់អ្នក រួចចុចប៊ូតុងខាងក្រោមដើម្បីផ្ទៀងផ្ទាត់'
@@ -1298,15 +1295,15 @@ export const Checkout = () => {
                             fullWidth
                             disabled={isCheckingPayment}
                             onClick={handleVerifyManualPayment}
-                            icon={<RefreshCw size={16} style={{ animation: isCheckingPayment ? 'spin 1s linear infinite' : 'none' }} />}
+                            icon={<RefreshCw size={15} style={{ animation: isCheckingPayment ? 'spin 1s linear infinite' : 'none' }} />}
                             style={{
-                              borderRadius: '12px',
+                              borderRadius: '10px',
                               backgroundColor: '#16A34A',
                               borderColor: '#16A34A',
                               fontWeight: 700,
-                              padding: '13px',
-                              fontSize: '0.96rem',
-                              boxShadow: '0 3px 10px rgba(22, 163, 74, 0.25)'
+                              padding: '10px 14px',
+                              fontSize: '0.88rem',
+                              boxShadow: '0 3px 8px rgba(22, 163, 74, 0.22)'
                             }}
                           >
                             {isCheckingPayment
@@ -1323,8 +1320,8 @@ export const Checkout = () => {
 
                 {/* Subtle bank support footer */}
                 <div style={{
-                  marginTop: '1rem',
-                  fontSize: '0.73rem',
+                  marginTop: '0.5rem',
+                  fontSize: '0.7rem',
                   color: '#9CA3AF',
                   textAlign: 'center'
                 }}>

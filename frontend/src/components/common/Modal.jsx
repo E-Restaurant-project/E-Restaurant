@@ -7,7 +7,9 @@ export const Modal = ({
   title,
   children,
   footer = null,
-  maxWidth = '580px'
+  maxWidth = '580px',
+  headerPadding = null,
+  bodyPadding = null
 }) => {
   useEffect(() => {
     const handleEsc = (e) => {
@@ -34,7 +36,7 @@ export const Modal = ({
         role="dialog"
         aria-modal="true"
       >
-        <div className="modal-header">
+        <div className="modal-header" style={headerPadding ? { padding: headerPadding } : undefined}>
           <h3 className="modal-title">{title}</h3>
           <button
             type="button"
@@ -45,7 +47,7 @@ export const Modal = ({
             <X size={20} />
           </button>
         </div>
-        <div className="modal-body">{children}</div>
+        <div className="modal-body" style={bodyPadding ? { padding: bodyPadding } : undefined}>{children}</div>
         {footer && <div className="modal-footer">{footer}</div>}
       </div>
     </div>
