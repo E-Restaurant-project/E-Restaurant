@@ -64,6 +64,7 @@ export const Checkout = () => {
   const [showKhqrModal, setShowKhqrModal] = useState(false);
   const [submittedOrder, setSubmittedOrder] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const isSubmittingOrderRef = React.useRef(false);
 
   // Bakong KHQR states
   const [khqrData, setKhqrData] = useState(null);
@@ -153,6 +154,7 @@ export const Checkout = () => {
     setApiLimitHit(false);
     setManualCheckAttempts(0);
     setKhqrMode('manual');
+    isSubmittingOrderRef.current = false;
 
     const billNumber = `PY-ORD-${Math.floor(1000 + Math.random() * 9000)}`;
     const res = await apiService.generateBakongKHQR({
@@ -199,10 +201,10 @@ export const Checkout = () => {
       if (isPaid) {
         setKhqrPaid(true);
         setApiLimitHit(false);
-        showToast(isKm ? '🎉 ការទូទាត់ជោគជ័យ! កំពុងបញ្ជូនការកុម្ម៉ង់...' : 'Payment verified successfully! Placing order...', 'success');
+        showToast(isKm ? '🎉 ធនាគារបានផ្ទៀងផ្ទាត់ជោគជ័យ! កំពុងបញ្ជូនការកុម្ម៉ង់...' : 'Payment verified by bank! Submitting order...', 'info');
         setTimeout(() => {
           executeOrderCreation();
-        }, 800);
+        }, 500);
         return true;
       } else if (!silent) {
         showToast(
@@ -227,7 +229,7 @@ export const Checkout = () => {
 
   // Manual Click Handler (Genuinely queries Bakong API with customer confirmation retry)
   const handleVerifyManualPayment = async () => {
-    if (isCheckingPayment || khqrPaid) return;
+    if (isCheckingPayment || khqrPaid || isSubmittingOrderRef.current) return;
     setIsCheckingPayment(true);
     
     const verified = await verifyBakongPayment(false);
@@ -241,12 +243,12 @@ export const Checkout = () => {
         showToast(
           isKm
             ? '✅ បានទទួលការបញ្ជាក់ការផ្ទេរប្រាក់! កំពុងបញ្ជូនការកុម្ម៉ង់...'
-            : 'Payment confirmed! Placing order...',
-          'success'
+            : 'Payment confirmed! Submitting order...',
+          'info'
         );
         setTimeout(() => {
           executeOrderCreation();
-        }, 800);
+        }, 500);
       }
     }
     setIsCheckingPayment(false);
@@ -254,22 +256,28 @@ export const Checkout = () => {
 
   // Auto-verify Polling: ONLY active when khqrMode === 'auto'
   React.useEffect(() => {
-    if (!showKhqrModal || !khqrData?.md5 || khqrPaid || khqrTimeLeft <= 0) return;
+    if (!showKhqrModal || !khqrData?.md5 || khqrPaid) return;
     if (khqrMode !== 'auto') return; // Do NOT poll in manual mode to save tokens!
 
+    // First check after 2.5s
     const initialTimer = setTimeout(() => {
-      verifyBakongPayment(true);
-    }, 4000);
+      if (!isSubmittingOrderRef.current) {
+        verifyBakongPayment(true);
+      }
+    }, 2500);
 
+    // Continuous poll every 4s
     const pollInterval = setInterval(() => {
-      verifyBakongPayment(true);
-    }, 6000);
+      if (!isSubmittingOrderRef.current) {
+        verifyBakongPayment(true);
+      }
+    }, 4000);
 
     return () => {
       clearTimeout(initialTimer);
       clearInterval(pollInterval);
     };
-  }, [showKhqrModal, khqrData?.md5, khqrPaid, khqrTimeLeft, khqrMode]);
+  }, [showKhqrModal, khqrData?.md5, khqrPaid, khqrMode]);
 
   // Apply promo code on checkout
   const handleApplyCheckoutPromo = async (e) => {
@@ -329,34 +337,43 @@ export const Checkout = () => {
   };
 
   const executeOrderCreation = () => {
+    if (isSubmittingOrderRef.current || submitting) return;
+    isSubmittingOrderRef.current = true;
     setSubmitting(true);
     setTimeout(async () => {
-      const orderPayload = {
-        customer_id: customerUser?._id || customerUser?.id || null,
-        customerName: formData.fullName.trim(),
-        phone: formData.phone.trim(),
-        email: formData.email.trim(),
-        orderType,
-        deliveryDistrict: orderType === 'delivery' ? formData.district : null,
-        address: orderType === 'delivery' ? `${formData.district}, ${formData.address.trim()}` : 'Central Kitchen Hub Pickup',
-        pickupTime: orderType === 'pickup' ? formData.pickupTime : '',
-        notes: formData.notes.trim(),
-        paymentMethod,
-        isPaid: paymentMethod === 'khqr' && khqrPaid,
-        items: [...items],
-        subtotal,
-        deliveryFee: orderType === 'delivery' ? deliveryFee : 0,
-        discount,
-        total: orderType === 'delivery' ? total : total - deliveryFee
-      };
+      try {
+        const orderPayload = {
+          customer_id: customerUser?._id || customerUser?.id || null,
+          customerName: formData.fullName.trim(),
+          phone: formData.phone.trim(),
+          email: formData.email.trim(),
+          orderType,
+          deliveryDistrict: orderType === 'delivery' ? formData.district : null,
+          address: orderType === 'delivery' ? `${formData.district}, ${formData.address.trim()}` : 'Central Kitchen Hub Pickup',
+          pickupTime: orderType === 'pickup' ? formData.pickupTime : '',
+          notes: formData.notes.trim(),
+          paymentMethod,
+          isPaid: paymentMethod === 'khqr' && khqrPaid,
+          items: [...items],
+          subtotal,
+          deliveryFee: orderType === 'delivery' ? deliveryFee : 0,
+          discount,
+          total: orderType === 'delivery' ? total : total - deliveryFee
+        };
 
-      const newOrder = await createOrder(orderPayload);
-      setSubmittedOrder(newOrder || orderPayload);
-      clearCart();
-      setShowKhqrModal(false);
-      setSubmitting(false);
-      showToast(t('checkout.order_success_title'), 'success');
-    }, 600);
+        const newOrder = await createOrder(orderPayload);
+        setSubmittedOrder(newOrder || orderPayload);
+        clearCart();
+        setShowKhqrModal(false);
+        setSubmitting(false);
+        // Only ONE final official green success toast!
+        showToast(t('checkout.order_success_title'), 'success');
+      } catch (err) {
+        isSubmittingOrderRef.current = false;
+        setSubmitting(false);
+        showToast(err.message || 'Failed to create order', 'error');
+      }
+    }, 500);
   };
 
   const dualTotal = formatDualCurrency(total);
@@ -1195,8 +1212,8 @@ export const Checkout = () => {
                             type="button"
                             onClick={() => {
                               setKhqrPaid(true);
-                              showToast(isKm ? '✅ បានទទួលការបញ្ជាក់ការទូទាត់! កំពុងបញ្ជូនការកុម្ម៉ង់...' : 'Payment recorded! Placing order...', 'success');
-                              setTimeout(() => executeOrderCreation(), 600);
+                              showToast(isKm ? '✅ បានទទួលការបញ្ជាក់ការទូទាត់! កំពុងបញ្ជូនការកុម្ម៉ង់...' : 'Payment recorded! Placing order...', 'info');
+                              setTimeout(() => executeOrderCreation(), 500);
                             }}
                             style={{
                               marginTop: '6px',
