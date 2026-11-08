@@ -164,7 +164,7 @@ export const MenuFilter = ({
             className={`menu-filter__cat-btn ${activeCategory === 'all' ? 'menu-filter__cat-btn--active' : ''}`}
             onClick={(e) => handleCategorySelect('all', e)}
           >
-            <span>{isKm ? '🍽️ មុខម្ហូបទាំងអស់' : '🍽️ All Dishes'}</span>
+            <span>{isKm ? 'មុខម្ហូបទាំងអស់' : 'All Dishes'}</span>
           </button>
 
           {categoryList.length === 0 && (

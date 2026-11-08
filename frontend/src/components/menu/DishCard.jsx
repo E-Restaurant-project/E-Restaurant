@@ -76,7 +76,7 @@ export const DishCard = ({ dish }) => {
               gap: '3px'
             }}
           >
-            🔥 -{effectiveDiscount}%
+            -{effectiveDiscount}%
           </div>
         )}
 

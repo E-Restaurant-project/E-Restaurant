@@ -184,7 +184,7 @@ export const Checkout = () => {
         if (!silent) {
           showToast(
             isKm
-              ? '⚠️ Bakong Token ដល់ដែនកំណត់ ១០០ ដង/ថ្ងៃហើយ! សូមចុច "ខ្ញុំបានបាញ់ប្រាក់រួចហើយ" ខាងក្រោមដើម្បីបញ្ជូនការកុម្ម៉ង់។'
+              ? 'Bakong Token ដល់ដែនកំណត់ ១០០ ដង/ថ្ងៃហើយ! សូមចុច "ខ្ញុំបានបាញ់ប្រាក់រួចហើយ" ខាងក្រោមដើម្បីបញ្ជូនការកុម្ម៉ង់។'
               : 'Bakong developer token limit (100 req/day) exceeded! Click "I Have Paid" below to submit.',
             'warning'
           );
@@ -201,7 +201,7 @@ export const Checkout = () => {
       if (isPaid) {
         setKhqrPaid(true);
         setApiLimitHit(false);
-        showToast(isKm ? '🎉 ធនាគារបានផ្ទៀងផ្ទាត់ជោគជ័យ! កំពុងបញ្ជូនការកុម្ម៉ង់...' : 'Payment verified by bank! Submitting order...', 'info');
+        showToast(isKm ? 'ធនាគារបានផ្ទៀងផ្ទាត់ជោគជ័យ! កំពុងបញ្ជូនការកុម្ម៉ង់...' : 'Payment verified by bank! Submitting order...', 'info');
         setTimeout(() => {
           executeOrderCreation();
         }, 500);
@@ -210,8 +210,8 @@ export const Checkout = () => {
         showToast(
           isKm
             ? (manualCheckAttempts >= 1
-                ? '⚠️ ធនាគារមិនទាន់ឆ្លើយតប! បើអ្នកបានផ្ទេររួចហើយ សូមចុចម្តងទៀតដើម្បីបញ្ជាក់ការកុម្ម៉ង់។'
-                : '⚠️ មិនទាន់ឃើញការផ្ទេរប្រាក់ពីធនាគារនៅឡើយទេ។ សូមពិនិត្យមើល App ធនាគាររបស់អ្នក រួចព្យាយាមចុចម្តងទៀត!')
+                ? 'ធនាគារមិនទាន់ឆ្លើយតប! បើអ្នកបានផ្ទេររួចហើយ សូមចុចម្តងទៀតដើម្បីបញ្ជាក់ការកុម្ម៉ង់។'
+                : 'មិនទាន់ឃើញការផ្ទេរប្រាក់ពីធនាគារនៅឡើយទេ។ សូមពិនិត្យមើល App ធនាគាររបស់អ្នក រួចព្យាយាមចុចម្តងទៀត!')
             : (manualCheckAttempts >= 1
                 ? 'Bank still processing! If you have completed the transfer, click again to confirm order.'
                 : 'Payment not found in bank yet. Please complete transfer in your banking app and try again!'),
@@ -246,7 +246,7 @@ export const Checkout = () => {
         setKhqrPaid(true);
         showToast(
           isKm
-            ? '✅ បានទទួលការបញ្ជាក់ការផ្ទេរប្រាក់! កំពុងបញ្ជូនការកុម្ម៉ង់...'
+            ? 'បានទទួលការបញ្ជាក់ការផ្ទេរប្រាក់! កំពុងបញ្ជូនការកុម្ម៉ង់...'
             : 'Payment confirmed! Submitting order...',
           'info'
         );
@@ -601,8 +601,8 @@ export const Checkout = () => {
               <div className="invoice-footer">
                 <div className="invoice-footer-thanks">
                   {isKm
-                    ? '🙏 សូមអរគុណសម្រាប់ការគាំទ្រភោជនីយដ្ឋាន ភូមិយើង!'
-                    : '🙏 Thank you for dining with Phum Yeung Restaurant!'}
+                    ? 'សូមអរគុណសម្រាប់ការគាំទ្រភោជនីយដ្ឋាន ភូមិយើង!'
+                    : 'Thank you for dining with Phum Yeung Restaurant!'}
                 </div>
                 <div className="invoice-footer-contact">
                   <span>Tel: 012 345 678 / 098 765 432</span>
@@ -1150,7 +1150,7 @@ export const Checkout = () => {
                       fontSize: '0.8rem',
                       fontWeight: 600
                     }}>
-                      ⚠️ កូដ QR បានផុតកំណត់រយៈពេល ១២០ វិនាទី
+                      កូដ QR បានផុតកំណត់រយៈពេល ១២០ វិនាទី
                     </div>
                   ) : (
                     <div style={{
@@ -1189,7 +1189,7 @@ export const Checkout = () => {
                       icon={<RefreshCw size={15} />}
                       style={{ borderRadius: '10px', padding: '9px', fontSize: '0.86rem' }}
                     >
-                      🔄 បង្កើតកូដ QR ថ្មី (Generate New QR)
+                      {isKm ? 'បង្កើតកូដ QR ថ្មី' : 'Generate New QR'}
                     </Button>
                   ) : !khqrPaid ? (
                     <div>
@@ -1206,7 +1206,7 @@ export const Checkout = () => {
                           textAlign: 'left'
                         }}>
                           <div style={{ fontWeight: 700, marginBottom: '2px' }}>
-                            ⚠️ Bakong Token ដល់ដែនកំណត់ប្រចាំថ្ងៃ (NBC 100/Day Exceeded)
+                            Bakong Token ដល់ដែនកំណត់ប្រចាំថ្ងៃ (NBC 100/Day Exceeded)
                           </div>
                           <div style={{ opacity: 0.9, lineHeight: 1.35, fontSize: '0.74rem' }}>
                             {isKm
@@ -1217,7 +1217,7 @@ export const Checkout = () => {
                             type="button"
                             onClick={() => {
                               setKhqrPaid(true);
-                              showToast(isKm ? '✅ បានទទួលការបញ្ជាក់ការទូទាត់! កំពុងបញ្ជូនការកុម្ម៉ង់...' : 'Payment recorded! Placing order...', 'info');
+                              showToast(isKm ? 'បានទទួលការបញ្ជាក់ការទូទាត់! កំពុងបញ្ជូនការកុម្ម៉ង់...' : 'Payment recorded! Placing order...', 'info');
                               setTimeout(() => executeOrderCreation(), 500);
                             }}
                             style={{
@@ -1234,7 +1234,7 @@ export const Checkout = () => {
                               boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)'
                             }}
                           >
-                            ✅ ខ្ញុំបានបាញ់ប្រាក់រួចហើយ (បញ្ជូនការកុម្ម៉ង់)
+                            {isKm ? 'ខ្ញុំបានបាញ់ប្រាក់រួចហើយ (បញ្ជូនការកុម្ម៉ង់)' : 'I Have Paid (Submit Order)'}
                           </button>
                         </div>
                       )}
@@ -1261,7 +1261,6 @@ export const Checkout = () => {
                             fontWeight: 700
                           }}
                         >
-                          <span>👆</span>
                           <span>{isKm ? 'ចុចដោយដៃ (Manual)' : 'Manual Click'}</span>
                         </button>
                         <button
@@ -1275,7 +1274,6 @@ export const Checkout = () => {
                             fontWeight: 700
                           }}
                         >
-                          <span>🔁</span>
                           <span>{isKm ? 'ពិនិត្យស្វ័យប្រវត្តិ (Auto)' : 'Auto Verify'}</span>
                         </button>
                       </div>
@@ -1331,8 +1329,8 @@ export const Checkout = () => {
                             {isCheckingPayment
                               ? (isKm ? 'កំពុងផ្ទៀងផ្ទាត់ជាមួយធនាគារ...' : 'Verifying with bank...')
                               : manualCheckAttempts >= 1
-                                ? (isKm ? '✅ ខ្ញុំបានបាញ់ប្រាក់រួចហើយ (ចុចដើម្បីបញ្ជាក់)' : '✅ I Have Paid (Click to Confirm)')
-                                : (isKm ? '✅ ខ្ញុំបានបាញ់ប្រាក់រួចហើយ (ផ្ទៀងផ្ទាត់)' : '✅ I Have Paid (Verify Payment)')}
+                                ? (isKm ? 'ខ្ញុំបានបាញ់ប្រាក់រួចហើយ (ចុចដើម្បីបញ្ជាក់)' : 'I Have Paid (Click to Confirm)')
+                                : (isKm ? 'ខ្ញុំបានបាញ់ប្រាក់រួចហើយ (ផ្ទៀងផ្ទាត់)' : 'I Have Paid (Verify Payment)')}
                           </Button>
                         </div>
                       )}
@@ -1359,7 +1357,7 @@ export const Checkout = () => {
                   onClick={handleInitiateKhqr}
                   style={{ marginTop: '10px' }}
                 >
-                  🔄 ព្យាយាមម្តងទៀត
+                  ព្យាយាមម្តងទៀត
                 </Button>
               </div>
             )}

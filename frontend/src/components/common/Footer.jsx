@@ -61,7 +61,7 @@ export const Footer = () => {
                 </div>
               </li>
               <li style={{ marginTop: '8px', color: 'var(--color-secondary-light)', fontSize: '0.85rem' }}>
-                🚀 Express delivery within 20 - 35 mins
+                Express delivery within 20 - 35 mins
               </li>
             </ul>
           </div>

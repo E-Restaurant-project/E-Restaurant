@@ -10,7 +10,10 @@ import {
   Clock,
   Leaf,
   Heart,
-  MapPin
+  MapPin,
+  Flame,
+  Package,
+  ChefHat
 } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
 import { Button } from '../components/common/Button';
@@ -63,19 +66,19 @@ export const About = () => {
 
               <div className="story__features">
                 <div className="story__feature-item">
-                  <div className="story__feature-icon">🌿</div>
+                  <div className="story__feature-icon"><Leaf size={18} color="#16a34a" /></div>
                   <span>{t('story.feature_organic')}</span>
                 </div>
                 <div className="story__feature-item">
-                  <div className="story__feature-icon">🔥</div>
+                  <div className="story__feature-icon"><Flame size={18} color="#dc2626" /></div>
                   <span>{t('story.feature_recipe')}</span>
                 </div>
                 <div className="story__feature-item">
-                  <div className="story__feature-icon">📦</div>
+                  <div className="story__feature-icon"><Package size={18} color="#b45309" /></div>
                   <span>{t('story.feature_packaging')}</span>
                 </div>
                 <div className="story__feature-item">
-                  <div className="story__feature-icon">👨‍🍳</div>
+                  <div className="story__feature-icon"><ChefHat size={18} color="#881337" /></div>
                   <span>{t('story.feature_chef')}</span>
                 </div>
               </div>
@@ -198,7 +201,7 @@ export const About = () => {
                 <p style={{ marginBottom: '6px', color: 'var(--color-text-main)' }}>{t('about.hours_weekdays')}</p>
                 <p style={{ color: 'var(--color-text-main)' }}>{t('about.hours_weekends')}</p>
                 <p style={{ marginTop: '8px', color: 'var(--color-secondary-dark)', fontWeight: 600 }}>
-                  🚀 Express delivery within 20 - 35 mins
+                  Express delivery within 20 - 35 mins
                 </p>
               </div>
             </div>

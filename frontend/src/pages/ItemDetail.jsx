@@ -160,7 +160,7 @@ export const ItemDetail = () => {
                       letterSpacing: '0.5px'
                     }}
                   >
-                    🔥 -{effectiveDiscount}% OFF
+                    -{effectiveDiscount}% OFF
                   </span>
                 </>
               ) : (

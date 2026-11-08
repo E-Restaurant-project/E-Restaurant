@@ -472,8 +472,8 @@ Retrieve operating status, delivery fees, and exchange rates.
     "khrRate": 4100,
     "announcement": {
       "active": true,
-      "text_km": "🔥 ប្រូម៉ូសិនពិសេស៖ បញ្ចុះតម្លៃ ១០% សម្រាប់ការកុម្ម៉ង់ដំបូងដោយប្រើកូដ PHUM10!",
-      "text_en": "🔥 Special Promo: Enjoy 10% OFF your first delivery order with code PHUM10!"
+      "text_km": "ប្រូម៉ូសិនពិសេស៖ បញ្ចុះតម្លៃ ១០% សម្រាប់ការកុម្ម៉ង់ដំបូងដោយប្រើកូដ PHUM10!",
+      "text_en": "Special Promo: Enjoy 10% OFF your first delivery order with code PHUM10!"
     }
   }
 }

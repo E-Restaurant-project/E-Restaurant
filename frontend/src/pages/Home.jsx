@@ -12,7 +12,10 @@ import {
   Clock,
   Package,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Leaf,
+  Flame,
+  ChefHat
 } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useRestaurant } from '../hooks/useRestaurant';
@@ -224,19 +227,19 @@ export const Home = () => {
 
               <div className="story__features">
                 <div className="story__feature-item">
-                  <div className="story__feature-icon">🌿</div>
+                  <div className="story__feature-icon"><Leaf size={18} color="#16a34a" /></div>
                   <span>{t('story.feature_organic')}</span>
                 </div>
                 <div className="story__feature-item">
-                  <div className="story__feature-icon">🔥</div>
+                  <div className="story__feature-icon"><Flame size={18} color="#dc2626" /></div>
                   <span>{t('story.feature_recipe')}</span>
                 </div>
                 <div className="story__feature-item">
-                  <div className="story__feature-icon">📦</div>
+                  <div className="story__feature-icon"><Package size={18} color="#b45309" /></div>
                   <span>{t('story.feature_packaging')}</span>
                 </div>
                 <div className="story__feature-item">
-                  <div className="story__feature-icon">👨‍🍳</div>
+                  <div className="story__feature-icon"><ChefHat size={18} color="#881337" /></div>
                   <span>{t('story.feature_chef')}</span>
                 </div>
               </div>

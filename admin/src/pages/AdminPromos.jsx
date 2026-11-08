@@ -735,12 +735,12 @@ export const AdminPromos = () => {
                           </div>
                           {catDiscount > 0 && currentDishDisc === 0 && (
                             <span style={{ fontSize: '0.72rem', color: '#d97706', display: 'block', marginTop: '4px', fontWeight: 600 }}>
-                              🔥 {isKm ? `បញ្ចុះតាមប្រភេទ: -${catDiscount}%` : `Category Deal: -${catDiscount}%`}
+                              {isKm ? `បញ្ចុះតាមប្រភេទ: -${catDiscount}%` : `Category Deal: -${catDiscount}%`}
                             </span>
                           )}
                           {catDiscount > 0 && currentDishDisc > 0 && (
                             <span style={{ fontSize: '0.72rem', color: '#16a34a', display: 'block', marginTop: '4px', fontWeight: 700 }}>
-                              ⚡ {isKm ? `បូកបញ្ចូលគ្នា: មុខម្ហូប ${currentDishDisc}% + ប្រភេទ ${catDiscount}% = ${effectiveDisc}%` : `Stacked: Dish ${currentDishDisc}% + Cat ${catDiscount}% = ${effectiveDisc}%`}
+                              {isKm ? `បូកបញ្ចូលគ្នា: មុខម្ហូប ${currentDishDisc}% + ប្រភេទ ${catDiscount}% = ${effectiveDisc}%` : `Stacked: Dish ${currentDishDisc}% + Cat ${catDiscount}% = ${effectiveDisc}%`}
                             </span>
                           )}
                           {catDiscount === 0 && currentDishDisc > 0 && (

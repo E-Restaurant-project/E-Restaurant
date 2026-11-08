@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import { ShoppingBag, Menu as MenuIcon, X, Truck, AlertCircle, User, Utensils } from 'lucide-react';
+import { ShoppingBag, Menu as MenuIcon, X, Truck, AlertCircle, User, Utensils, Info, Phone } from 'lucide-react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useCart } from '../../hooks/useCart';
 import { useRestaurant } from '../../hooks/useRestaurant';
@@ -71,7 +71,7 @@ export const Navbar = () => {
               }
             }
           `}</style>
-          <span>📢 {announcementText}</span>
+          <span>{announcementText}</span>
         </div>
       )}
 
@@ -235,7 +235,8 @@ export const Navbar = () => {
             }
             onClick={closeMobile}
           >
-            🍲 {t('nav.menu')}
+            <Utensils size={18} />
+            <span>{t('nav.menu')}</span>
           </NavLink>
           <NavLink
             to="/track-order"
@@ -244,7 +245,8 @@ export const Navbar = () => {
             }
             onClick={closeMobile}
           >
-            🛵 {t('nav.track_order')}
+            <Truck size={18} />
+            <span>{t('nav.track_order')}</span>
           </NavLink>
           <NavLink
             to="/about"
@@ -253,7 +255,8 @@ export const Navbar = () => {
             }
             onClick={closeMobile}
           >
-            ℹ️ {t('nav.about')}
+            <Info size={18} />
+            <span>{t('nav.about')}</span>
           </NavLink>
           <NavLink
             to="/contact"
@@ -262,7 +265,8 @@ export const Navbar = () => {
             }
             onClick={closeMobile}
           >
-            📞 {t('nav.contact')}
+            <Phone size={18} />
+            <span>{t('nav.contact')}</span>
           </NavLink>
           <NavLink
             to={isCustomerLoggedIn ? '/account' : '/auth'}
@@ -271,7 +275,8 @@ export const Navbar = () => {
             }
             onClick={closeMobile}
           >
-            👤 {isCustomerLoggedIn ? (customerUser?.name || t('nav.account')) : t('nav.login')}
+            <User size={18} />
+            <span>{isCustomerLoggedIn ? (customerUser?.name || t('nav.account')) : t('nav.login')}</span>
           </NavLink>
         </div>
       </header>

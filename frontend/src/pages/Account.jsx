@@ -25,7 +25,8 @@ import {
   Search,
   Truck,
   HelpCircle,
-  Compass
+  Compass,
+  Flame
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -861,7 +862,7 @@ export const Account = () => {
                                 <strong>{isKm ? (item.nameKm || item.name) : (item.nameEn || item.name)}</strong>
                                 <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>×{item.quantity}</span>
                                 {item.spiceLevel && item.spiceLevel !== 'none' && (
-                                  <span style={{ fontSize: '0.74rem', color: '#dc2626' }}>🌶️</span>
+                                  <Flame size={12} color="#dc2626" />
                                 )}
                               </span>
                             ))}
