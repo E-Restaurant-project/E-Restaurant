@@ -87,49 +87,13 @@ export const MenuFilter = ({
   return (
     <div className="menu-filter">
       {/* Top Search & Filter Bar */}
-      <div
-        className="menu-filter__row"
-        style={{
-          display: 'flex',
-          gap: '12px',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          justifyContent: 'space-between',
-          marginBottom: '14px'
-        }}
-      >
+      <div className="menu-filter__row">
         {/* Search Input */}
-        <div
-          className="menu-filter__search-box"
-          style={{
-            flex: '1 1 280px',
-            minWidth: '240px',
-            position: 'relative'
-          }}
-        >
-          <Search
-            size={18}
-            className="menu-filter__search-icon"
-            style={{
-              position: 'absolute',
-              left: '14px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: 'var(--color-text-light)',
-              pointerEvents: 'none'
-            }}
-          />
+        <div className="menu-filter__search-box">
+          <Search size={18} className="menu-filter__search-icon" />
           <input
             type="text"
             className="form-input menu-filter__search-input"
-            style={{
-              width: '100%',
-              paddingLeft: '42px',
-              paddingRight: searchQuery ? '40px' : '14px',
-              height: '46px',
-              borderRadius: '12px',
-              fontSize: '0.92rem'
-            }}
             placeholder={t('menu.search_placeholder') || (isKm ? 'ស្វែងរកមុខម្ហូបតាមឈ្មោះ...' : 'Search dishes by name...')}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -138,22 +102,7 @@ export const MenuFilter = ({
             <button
               type="button"
               onClick={() => onSearchChange('')}
-              style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: '#e2e8f0',
-                border: 'none',
-                borderRadius: '50%',
-                width: '22px',
-                height: '22px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: '#475569'
-              }}
+              className="menu-filter__search-clear"
               aria-label="Clear search"
             >
               <X size={13} />
@@ -162,17 +111,9 @@ export const MenuFilter = ({
         </div>
 
         {/* Filter Controls (Spice & Sort) in unified flex row */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '10px',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            flex: '0 0 auto'
-          }}
-        >
+        <div className="menu-filter__dropdowns">
           {/* Spice Filter */}
-          <div style={{ minWidth: '180px' }}>
+          <div className="menu-filter__dropdown-item">
             <CustomSelect
               options={[
                 { id: 'all', label: isKm ? 'កម្រិតហិរទាំងអស់' : 'All Spice Levels' },
@@ -188,7 +129,7 @@ export const MenuFilter = ({
           </div>
 
           {/* Sort Filter */}
-          <div style={{ minWidth: '180px' }}>
+          <div className="menu-filter__dropdown-item">
             <CustomSelect
               options={sortOptions}
               value={sortBy}
